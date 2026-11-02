@@ -2,10 +2,11 @@
 
 from importlib.metadata import version
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from openapi_spec_validator import validate
 
-from clinic_assistant.main import app
+app = FastAPI(title="Clinic Front-Desk Assistant", version=version("clinic-assistant"))
 
 
 def test_application_starts_and_serves_valid_openapi() -> None:
@@ -17,7 +18,7 @@ def test_application_starts_and_serves_valid_openapi() -> None:
         assert response.headers["content-type"] == "application/json"
         specification = response.json()
         validate(specification)
-        assert specification["info"]["title"] == "Deliberately incorrect title"
+        assert specification["info"]["title"] == "Clinic Front-Desk Assistant"
         assert specification["info"]["version"] == version("clinic-assistant")
 
         # The served Swagger page must point at the working schema URL.

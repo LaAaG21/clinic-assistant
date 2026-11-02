@@ -1,6 +1,7 @@
 # R1: PostgreSQL checkpoint persistence
 
 - **Issue:** #3 · **Owner:** Louai1999 · **Date:** 2026-11-02 · **Status:** experiment done; recommendation **Proposed** (not yet agreed)
+- **Open:** comparison with #4 and the spike share-out have not happened yet; the ADR in `docs/adr/` is written only after team agreement.
 - **Experiment:** [`experiments/r1_checkpoints/`](../../experiments/r1_checkpoints/)
 
 ## Question
@@ -26,7 +27,7 @@ How do we keep each conversation's LangGraph state under its own thread ID so th
 
 ## Versions
 
-Python 3.12.16 · langgraph 1.2.19 · langgraph-checkpoint 4.3.1 · langgraph-checkpoint-postgres 3.2.0 · psycopg 3.3.6 · PostgreSQL 17.6 · uv 0.12.23
+Python 3.12.16 · langgraph 1.2.19 · langgraph-checkpoint 4.3.1 · langgraph-checkpoint-postgres 3.2.0 · psycopg 3.3.6 · PostgreSQL 17.6 · uv 0.12.23 · pytest 9.2.0
 
 ## Experiment
 
@@ -59,6 +60,23 @@ docker compose exec spike python spike.py show patient-99
 - `patient-99` returned `turns=0`: threads are isolated.
 - `setup()` created `checkpoints`, `checkpoint_blobs`, `checkpoint_writes`, `checkpoint_migrations`.
 - 9 checkpoint rows for 3 messages: one checkpoint per graph step, which is what lets a graph pause mid-run (#4).
+
+## Automated tests
+
+Run inside the `spike` container against the real PostgreSQL service (no model key):
+
+```bash
+docker compose up -d --build --wait
+docker compose exec spike pytest -v
+```
+
+| Test | What it proves |
+|---|---|
+| `test_fake_llm.py` (3 tests) | Fixed reply per turn, last reply repeats, same turn gives the same reply. |
+| `test_same_thread_is_restored_by_a_new_saver_and_graph` | State written through one connection is read by a **new** saver and **new** graph (`turns=2`, 4 messages), and the next message becomes turn 3 with the turn-3 reply. |
+| `test_a_different_thread_is_isolated` | A second thread ID is empty while the first holds state. |
+
+Result (2026-11-02): `5 passed in 0.84s` on Python 3.12.16, pytest 9.2.0. Each test uses a random `test-<uuid>` thread ID, and database tests fail (not skip) when `DATABASE_URL` is missing. The container restart above remains the evidence for container/volume behaviour; the tests cover reconnection in code.
 
 ## Recommendation (Proposed)
 

@@ -2,8 +2,12 @@
 
 from fastapi import FastAPI
 
+from clinic_assistant.errors import register_error_handlers
+
 app = FastAPI(
     title="Clinic Front-Desk Assistant",
     version="0.1.0.dev0",
     description="Backend service for the clinic's existing chat client.",
 )
+
+register_error_handlers(app)

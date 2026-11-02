@@ -21,3 +21,7 @@ Database access uses plain SQL without an ORM.
 ## Status
 
 In development.
+
+## Research
+
+- [Clinic-document retrieval comparison](docs/research/clinic-document-retrieval.md)

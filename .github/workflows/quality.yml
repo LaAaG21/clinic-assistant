@@ -1,0 +1,97 @@
+name: Quality checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Ephemeral CI database only; matches the #11 connection variable names.
+      POSTGRES_DB: clinic
+      POSTGRES_USER: clinic
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_PORT: "5432"
+      DATABASE_URL: postgresql://clinic:ci-only-password@127.0.0.1:5432/clinic
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_DB: clinic
+          POSTGRES_USER: clinic
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U clinic -d clinic"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install locked project and development tools
+        run: uv sync --locked --group dev
+
+      - name: Ruff lint
+        run: uv run --locked ruff check .
+
+      - name: Ruff format
+        run: uv run --locked ruff format --check .
+
+      - name: Mypy
+        run: uv run --locked mypy .
+
+      - name: Verify application coverage scope
+        # Use #10's shared coverage config, never silently cover tests/the repo.
+        run: |
+          uv run --locked python - <<'PY'
+          from coverage import Coverage
+
+          coverage = Coverage(config_file="pyproject.toml")
+          sources = (
+              coverage.get_option("run:source")
+              or coverage.get_option("run:source_pkgs")
+          )
+          if not sources or any(
+              source in {".", "tests", "experiments"}
+              or source.startswith(("tests/", "tests.", "experiments/", "experiments."))
+              for source in sources
+          ):
+              raise SystemExit(
+                  "Configure coverage.run.source/source_pkgs for the actual "
+                  "application in the shared pyproject.toml (#10)."
+              )
+          PY
+
+      - name: Pytest and application coverage (minimum 80%)
+        run: >-
+          uv run --locked pytest
+          --cov
+          --cov-config=pyproject.toml
+          --cov-report=term-missing
+          --cov-fail-under=80

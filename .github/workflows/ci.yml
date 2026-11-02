@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# All jobs run for documentation changes too; required checks must never be
+# omitted by path filters. Job names below are the branch-protection contexts.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ruff lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          version: "0.12.23"
+          python-version: "3.12"
+          enable-cache: true
+          cache-suffix: lint
+      - run: uv sync --locked --all-groups
+      - run: uv run --no-sync ruff check .
+
+  format:
+    name: Ruff format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          version: "0.12.23"
+          python-version: "3.12"
+          enable-cache: true
+          cache-suffix: format
+      - run: uv sync --locked --all-groups
+      - run: uv run --no-sync ruff format --check .
+
+  typecheck:
+    name: Mypy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          version: "0.12.23"
+          python-version: "3.12"
+          enable-cache: true
+          cache-suffix: mypy
+      - run: uv sync --locked --all-groups
+      - run: uv run --no-sync mypy src tests
+
+  test:
+    name: Pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: clinic
+          POSTGRES_PASSWORD: clinic-ci-only
+          POSTGRES_DB: clinic_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U clinic -d clinic_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://clinic:clinic-ci-only@localhost:5432/clinic_test
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          version: "0.12.23"
+          python-version: "3.12"
+          enable-cache: true
+          cache-suffix: pytest
+      - run: uv sync --locked --all-groups
+      - name: Test all application code with branch coverage
+        run: >-
+          uv run --no-sync pytest
+          --cov=clinic_assistant --cov-branch
+          --cov-report=term-missing --cov-fail-under=80
+
+  docker:
+    name: Docker smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Validate local development configuration
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+      - name: Build source and start healthy services
+        run: docker compose up --build -d --wait --wait-timeout 120
+      - name: Check API liveness and PostgreSQL readiness
+        run: |
+          curl --fail --silent --show-error http://localhost:8000/health
+          curl --fail --silent --show-error http://localhost:8000/ready
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop services
+        if: always()
+        run: docker compose down

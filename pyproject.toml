@@ -6,6 +6,7 @@ readme = "README.md"
 authors = [{ name = "LaAaG21" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "tzdata>=2026.1",
     "psycopg[binary]>=3.3,<4",
     "fastapi>=0.162,<1",
     "pydantic>=2,<3",

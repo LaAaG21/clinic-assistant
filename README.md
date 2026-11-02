@@ -22,6 +22,7 @@ Database access uses plain SQL without an ORM.
 
 In development.
 
-## Research
+## Standalone experiments
 
-- [Clinic-document retrieval comparison](docs/research/clinic-document-retrieval.md)
+- [Issue #4: staff approval interrupt/resume](experiments/staff_approval/README.md)
+- [Research note and proposed recommendation](docs/research/004-staff-interrupt-resume.md)

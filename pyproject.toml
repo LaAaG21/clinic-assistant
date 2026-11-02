@@ -1,0 +1,52 @@
+[project]
+name = "clinic-assistant"
+version = "0.1.0.dev0"
+description = "Clinic front-desk REST API"
+readme = "README.md"
+authors = [{ name = "LaAaG21" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.162,<1",
+    "uvicorn>=0.30,<1",
+]
+
+[build-system]
+requires = ["uv_build==0.12.23"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2,<3",
+    "mypy>=2.4.1",
+    "openapi-spec-validator>=0.7.2,<1",
+    "pytest>=9.2.0",
+    "pytest-cov>=7",
+    "ruff>=0.17.3",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = ["experiments"]
+force-exclude = true
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+exclude = ["^experiments/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "--strict-config", "--strict-markers"]
+
+[tool.coverage.run]
+source = ["clinic_assistant"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

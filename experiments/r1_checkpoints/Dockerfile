@@ -8,9 +8,11 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
-RUN uv sync --frozen --no-dev --no-install-project
+# Dev group included so pytest can run against the real database in this container.
+RUN uv sync --frozen --no-install-project
 
 COPY fake_llm.py spike.py ./
+COPY tests/ ./tests/
 RUN useradd --create-home spike
 USER spike
 

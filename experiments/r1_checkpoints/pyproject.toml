@@ -11,6 +11,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=2.4.1",
+    "pytest>=9.2.0",
     "ruff>=0.17.3",
 ]
 
@@ -24,3 +25,9 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--strict-markers -p no:cacheprovider"
+markers = ["postgres: needs a real PostgreSQL reachable through DATABASE_URL"]

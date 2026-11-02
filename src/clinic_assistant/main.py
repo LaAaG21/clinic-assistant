@@ -7,3 +7,5 @@ app = FastAPI(
     version="0.1.0.dev0",
     description="Backend service for the clinic's existing chat client.",
 )
+
+import os

@@ -6,8 +6,10 @@ Status: **Proposed, pending research share-out and team review**. Related work:
 The clinic assistant is a backend REST service for the clinic's existing chat
 client. This contract defines component responsibilities, patient messages,
 appointment requests, staff decisions, and observable outcomes. It implements no
-endpoints. The source requirements are the *Clinic Front-Desk Assistant* Word
-brief, sections 1, 2, 5, and 6, especially FR-1 through FR-7.
+endpoints. The source requirements are the repository's
+[Clinic Front-Desk Assistant Word brief](../requirements/clinic-front-desk-assistant.docx),
+sections 1, 2, 5, and 6, especially FR-1 through FR-7. The brief is an unchanged
+copy of the supplied challenge document.
 
 Required behavior comes from the brief. Routes, field names, limits, and handoffs
 below are design proposals for review, not recorded team agreement. Research
@@ -311,21 +313,22 @@ healthy. Model failures are reported by the affected request.
 
 ## Research evidence and decisions still open
 
-Evidence reviewed on November 2, 2026. No team agreement or completed share-out was
-recorded in the inspected issue discussions, research note, or proposed ADR.
+Evidence refreshed on November 2, 2026 against the merged research on `main` and
+the available #4 experiment branch. The research still leaves the team share-out
+and agreed ADRs pending; no accepted research ADR is present on `main`.
 
 | Research | Available evidence | What remains open |
 | --- | --- | --- |
 | [#3](https://github.com/LaAaG21/clinic-assistant/issues/3) checkpoints | [Merged R1 note](../research/r1-postgres-checkpoints.md), from [PR #7](https://github.com/LaAaG21/clinic-assistant/pull/7), reports restored state after container replacement and continuation on the same thread. Its recommendation is explicitly Proposed. | Sync versus async saver, startup/migration lifecycle, public ID/thread mapping, concurrent message handling, retention and state evolution; compare with #4 before acceptance. |
-| [#4](https://github.com/LaAaG21/clinic-assistant/issues/4) interrupt and resume | Issue specifies the experiment; no research note or accepted ADR was available in inspected main/remote branches or issue comments. | Actual interrupt/resume input shape, nodes replayed, duplicate decisions, durable decision-to-resume handoff, mutation/checkpoint reconciliation, pending restart recovery, and emergency handling during a pause. |
-| [#5](https://github.com/LaAaG21/clinic-assistant/issues/5) retrieval | [PR #9 research](https://github.com/LaAaG21/clinic-assistant/blob/9837a01353268396b7bb6d6afd8aa44668271fb1/docs/research/clinic-document-retrieval.md) reports expected hits for 7/8 supported questions with keywords and 6/8 with PostgreSQL full-text search; 11 versus 0 irrelevant passages. [ADR 0001](https://github.com/LaAaG21/clinic-assistant/blob/9837a01353268396b7bb6d6afd8aa44668271fb1/docs/adr/0001-clinic-document-retrieval.md) remains Proposed. | Retrieval method, chunking, evidence sufficiency, citation locations, and unsupported-answer behavior. The inspected experiment uses prepared passages and does not demonstrate splitting or fake-model grounded answers; embeddings are not evaluated there. Review the remaining #5 evidence before acceptance. |
+| [#4](https://github.com/LaAaG21/clinic-assistant/issues/4) interrupt and resume | The [unmerged proposed findings](https://github.com/LaAaG21/clinic-assistant/blob/443a89103dbead9cc6085be0ae054498330672cf/docs/research/004-staff-interrupt-resume.md) describe a PostgreSQL-backed interrupt, pending/decision payloads, and approval/rejection assertions. Compilation and Compose configuration checks passed, but the note explicitly reports that end-to-end execution was blocked; no successful pause/resume or persistence result is claimed. | Runtime evidence and comparison with #3 before agreement; production resume shape, replay/duplicate decisions, durable decision-to-resume handoff, mutation/checkpoint reconciliation, pending restart recovery, and emergency handling during a pause. |
+| [#5](https://github.com/LaAaG21/clinic-assistant/issues/5) retrieval | The [merged R3 note](../research/clinic-document-retrieval.md), from [PR #9](https://github.com/LaAaG21/clinic-assistant/pull/9), describes splitting four synthetic documents into five passages with source IDs, deterministic fake-model answers naming sources, and unsupported-answer fallbacks. Retrieval results remain 7/8 supported hits for keywords versus 6/8 for PostgreSQL full-text search, with 11 versus 0 irrelevant passages. Embeddings were reviewed in documentation only. The earlier ADR was withdrawn; team agreement and an ADR are deferred to a follow-up PR. | Agree the retrieval method after share-out; production chunk limits/versioned source locations, evidence sufficiency, and unsupported-answer behavior still need decisions. Embedding quality was not measured, and the fake model does not establish real-model answer reliability. |
 
 The PostgreSQL-only requirement and required approval/safety behavior are fixed
 by the brief; choosing a specific saver, identity mapping, or retrieval algorithm
 is not. The R1 proposal `thread_id = conversation_id` is a candidate, not a decision
-made by this document. R3 scores are small-sample retrieval observations, not
-evidence of reliable generated answers. Research experiments were not rerun for
-this documentation change.
+made by this document. R3 scores are small-sample retrieval observations; its
+fake-model answers demonstrate the evidence/citation interface, not real-model
+reliability. Research experiments were not rerun for this documentation change.
 
 Other review questions: clinic timezone and same-day boundary, message/history
 window limits, emergency guard rules and wording, staff-route deployment access,

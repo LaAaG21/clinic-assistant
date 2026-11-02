@@ -61,6 +61,11 @@ from #6 guides future routes and keeps workflow policy outside API handlers.
 This foundation establishes package/tool conventions only; it does not finalize
 the research-dependent decisions that remain open in that proposal.
 
+## Clinic documents
+
+The [clinic document loader](docs/development/clinic-document-loader.md) reads
+complete UTF-8 Markdown files and preserves original filenames for later citations.
+
 ## Quality checks
 
 After the locked sync, run:

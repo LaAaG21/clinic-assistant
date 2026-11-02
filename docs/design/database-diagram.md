@@ -84,16 +84,13 @@ erDiagram
 
 All IDs are server-generated opaque text (#6). All times are `timestamptz`, so every value carries an absolute instant and the clinic timezone is applied only when a local date is needed (#6, #20).
 
-| Table | Key and relationships | Proposed rules |
-|---|---|---|
-| `doctors` | PK `doctor_id` | `full_name` and `specialty` required and non-empty after trimming. |
-| `slots` | PK `slot_id`; FK `doctor_id` → `doctors` (required) | `starts_at` and `ends_at` required; **`starts_at < ends_at`**; unique `(doctor_id, starts_at)`. A slot holds no booking state; availability = no active booking. |
-| `bookings` | PK `booking_id`; FK `slot_id` → `slots`, FK `conversation_id` → `conversations` | `status` in (`booked`, `cancelled`). **Unique `slot_id` where `status = 'booked'`** (partial unique index): two active bookings for one slot are impossible even under concurrent requests, and a cancelled slot can be booked again. `cancelled_at` set exactly when cancelled. |
-| `conversations` | PK `conversation_id` | Created by `POST /conversations`. |
-| `messages` | PK `message_id`; FK `conversation_id`; optional FK `request_id` | `role` in (`patient`, `assistant`). Unique `(conversation_id, client_message_id)` for safe retries (#6); `client_message_id` required for patient messages, null for assistant messages. |
-| `requests` | PK `request_id`; FK `conversation_id`; optional FKs `slot_id`, `booking_id` | `action = 'book'` requires `slot_id`; `action = 'cancel'` requires `booking_id`. A completed booking request points to the booking it created. Status values from #6. |
-| `approvals` | PK `approval_id`; FK `request_id` **unique** (at most one approval per request) | Exists only for cancellations and same-day bookings. `decision`, `reason`, `decided_at` are all null (pending) or all set (decided): one decision only (#6). |
-| `emergency_flags` | PK `flag_id`; FK `conversation_id`; FK `message_id` unique | One flag per emergency message. |
+Rules the diagram cannot show:
+
+- **`bookings`:** unique `slot_id` where `status = 'booked'` (partial unique index). Two active bookings for one slot are impossible even under concurrent requests, and a cancelled slot can be booked again. `cancelled_at` is set exactly when cancelled.
+- **`slots`:** hold no booking state; a slot is available when it has no active booking.
+- **`messages`:** unique `(conversation_id, client_message_id)` for safe retries (#6); `client_message_id` is required for patient messages and null for assistant messages.
+- **`requests`:** `action = 'book'` requires `slot_id`; `action = 'cancel'` requires `booking_id`. A completed booking request points to the booking it created.
+- **`approvals`:** exist only for cancellations and same-day bookings; `decision`, `reason` and `decided_at` are all null (pending) or all set (decided), so there is one decision only (#6).
 
 ### Slot time-validity rules for #19
 
@@ -101,12 +98,15 @@ All IDs are server-generated opaque text (#6). All times are `timestamptz`, so e
 2. `CHECK (starts_at < ends_at)`.
 3. `UNIQUE (doctor_id, starts_at)`: no duplicate slot for the same doctor and start.
 4. FK `doctor_id` → `doctors.doctor_id`: a slot cannot point to a doctor who does not exist.
+5. `doctors.full_name` and `doctors.specialty` are required and non-empty after trimming.
 
 Bookings and the booking-conflict index are outside #19 (future bookings issue).
 
 ## Application tables vs LangGraph checkpoint tables
 
 The [R1 experiment](../research/r1-postgres-checkpoints.md) (#3) showed that `PostgresSaver.setup()` creates and migrates its own tables in the same database: `checkpoints`, `checkpoint_blobs`, `checkpoint_writes` and `checkpoint_migrations`, keyed by `thread_id`. They are **not** in the diagram above on purpose.
+
+The [interrupt/resume note](../research/004-staff-interrupt-resume.md) (#4) shows how an approval reaches the paused graph: the waiting result carries `thread_id`, a server-generated `pending_id` and LangGraph's `interrupt_id`; staff decide by `pending_id`, and the server resumes with `Command(resume={"pending_id", "decision", "reason"})` on the stored `thread_id`. The note also warns that code before `interrupt()` can run again and checkpoints alone do not give exactly-once writes, so the database constraints here (partial unique booking index, one approval per request) stay necessary. Its end-to-end PostgreSQL run is recorded there as not yet observed.
 
 | | Application tables (diagram above) | LangGraph checkpoint tables |
 |---|---|---|
@@ -125,14 +125,14 @@ Proposed rules:
 
 - **Booking:** patient message → `messages` row (`role = patient`) → `requests` row (`action = book`, `slot_id`). Not same-day: insert `bookings` (`status = booked`); the partial unique index rejects a second active booking for that slot; the request becomes `completed` with `booking_id`, and an assistant `messages` row carries the outcome.
 - **Conversation with messages:** one `conversations` row, many `messages` ordered by `created_at`; a retry with the same `client_message_id` hits the unique key instead of creating a duplicate. Graph state for the same conversation is in the checkpoint tables under its `thread_id`.
-- **Pending approval:** a cancellation creates a `requests` row (`action = cancel`, `booking_id`, `status = pending_approval`) and an `approvals` row with null decision; the graph pauses at its interrupt (checkpoint tables). Staff decide → `approvals` gets decision, reason and time → the graph resumes → the booking is cancelled (approve) or untouched (reject) → the request becomes `completed` or `rejected` and an assistant message reports it.
+- **Pending approval:** a cancellation creates a `requests` row (`action = cancel`, `booking_id`, `status = pending_approval`) and an `approvals` row with null decision; the graph pauses at its interrupt (checkpoint tables, #4). Staff decide by approval ID → `approvals` gets decision, reason and time → the server looks up the conversation's `thread_id` and resumes with `Command(resume=...)` → the booking is cancelled (approve) or untouched (reject) → the request becomes `completed` or `rejected` and an assistant message reports it.
 
 ## Open questions (not agreed)
 
 | # | Question | Depends on |
 |---|---|---|
 | Q1 | Is the graph `thread_id` equal to `conversation_id`, or stored as its own column? | #3, #4, #6 |
-| Q2 | How does an approval find its paused graph run (thread only, or also an interrupt/checkpoint ID)? #4 has no findings yet. | #4 |
+| Q2 | Should `approvals` store only the graph `thread_id`, or also the `interrupt_id`, and is #4's `pending_id` the same value as `approval_id`? #4 says the thread alone works for one interrupt per graph; several simultaneous interrupts need the interrupt ID. | #4, #6 |
 | Q3 | Source of truth when request status in our tables and the graph state disagree after a failure. | #4, #6 |
 | Q4 | Checkpoint tables in the default schema or a separate schema; when `setup()` runs. | #3 |
 | Q5 | Include `requests` and `emergency_flags` as proposed here? | Team |

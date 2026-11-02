@@ -21,7 +21,7 @@ Database access uses plain SQL without an ORM.
 ## Status
 
 In development. The application foundation serves OpenAPI and interactive API
-documentation. Clinic workflows, database integration, health reporting, and API
+documentation and the database health endpoint. Clinic workflows and API
 Docker packaging are separate tasks.
 
 ## Local development
@@ -40,7 +40,7 @@ This foundation starts without a database, `.env`, or model API key.
 
 Open [Swagger UI](http://127.0.0.1:8000/docs) or
 [OpenAPI JSON](http://127.0.0.1:8000/openapi.json). No business routes are registered
-yet, so the schema has an empty `paths` object and `/` returns `404`. Stop the
+yet; `/health` checks PostgreSQL and `/` returns `404`. Stop the
 server with Ctrl+C. Use another port if 8000 is occupied.
 
 ## Package conventions
@@ -105,7 +105,7 @@ This foundation starts without a database, `.env`, or model API key.
 
 Open [Swagger UI](http://127.0.0.1:8000/docs) or
 [OpenAPI JSON](http://127.0.0.1:8000/openapi.json). No business routes are registered
-yet, so the schema has an empty `paths` object and `/` returns `404`. Stop the
+yet; `/health` checks PostgreSQL and `/` returns `404`. Stop the
 server with Ctrl+C. Use another port if 8000 is occupied.
 
 ## Package conventions
@@ -163,3 +163,8 @@ are documented in [Patient-message models](docs/development/patient-message-mode
 
 - [Issue #4: staff approval interrupt/resume](experiments/staff_approval/README.md)
 - [Research note and proposed recommendation](docs/research/004-staff-interrupt-resume.md)
+
+## Health endpoint
+
+See [API and database health](docs/development/health.md) for the response contract,
+configuration, and real-PostgreSQL verification commands.

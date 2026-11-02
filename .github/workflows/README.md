@@ -41,7 +41,16 @@ reconciled with the merged dependencies before this issue can be completed.
 - `git diff --check`: passed.
 - Successful application workflow run: **pending #10/#12**.
 - Measured application coverage: **not available**.
-- Failure propagation in a real workflow: **pending**; no claim of execution.
+- Lint/format/type/test/coverage failure propagation: **pending**.
+
+First real run: [41437693661](https://github.com/LaAaG21/clinic-assistant/actions/runs/41437693661),
+commit `6332a44`, draft PR #17. Check **Quality checks**: **failed**.
+PostgreSQL container initialization, checkout, and uv installation succeeded.
+**Install locked project and development tools** failed against the current
+dependency-incomplete tree. Ruff lint, Ruff format, Mypy, coverage-scope validation,
+and Pytest/coverage were skipped as a consequence, not passed. This demonstrates
+that installation failure fails the workflow, but does not establish successful
+application behavior or lint/format/type/test/coverage failure propagation.
 
 After integration, record the actual GitHub Actions run URL, commit, step names,
 results, test count, and measured coverage here. Verify documentation-only PRs

@@ -1,0 +1,80 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "text": "When does the clinic open?",
+      "expected": [
+        "clinic-hours.md#p1"
+      ]
+    },
+    {
+      "id": "q2",
+      "text": "How do I book appointments?",
+      "expected": [
+        "appointments.md#p1"
+      ]
+    },
+    {
+      "id": "q3",
+      "text": "Is parking free?",
+      "expected": [
+        "access.md#p1"
+      ]
+    },
+    {
+      "id": "q4",
+      "text": "Do cancellations require approval?",
+      "expected": [
+        "appointments.md#p2"
+      ]
+    },
+    {
+      "id": "q5",
+      "text": "Which insurance does the clinic accept?",
+      "expected": [
+        "billing.md#p1"
+      ]
+    },
+    {
+      "id": "q6",
+      "text": "Where can I leave my car?",
+      "expected": [
+        "access.md#p1"
+      ]
+    },
+    {
+      "id": "q7",
+      "text": "How much does parking cost?",
+      "expected": [
+        "access.md#p1"
+      ]
+    },
+    {
+      "id": "q8",
+      "text": "Does the clinic accept Maple insurance?",
+      "expected": []
+    },
+    {
+      "id": "q9",
+      "text": "Can I book surgery appointments?",
+      "expected": []
+    },
+    {
+      "id": "q10",
+      "text": "What antibiotic should I take?",
+      "expected": []
+    },
+    {
+      "id": "q11",
+      "text": "Is the clinic open on Sunday?",
+      "expected": [
+        "clinic-hours.md#p1"
+      ]
+    },
+    {
+      "id": "q12",
+      "text": "the and is",
+      "expected": []
+    }
+  ]
+}

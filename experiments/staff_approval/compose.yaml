@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: experiment
+      POSTGRES_PASSWORD: local-synthetic-only
+      POSTGRES_DB: approvals
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U experiment -d approvals"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - checkpoints:/var/lib/postgresql/data
+  demo:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://experiment:local-synthetic-only@db:5432/approvals
+      LANGSMITH_TRACING: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  checkpoints:

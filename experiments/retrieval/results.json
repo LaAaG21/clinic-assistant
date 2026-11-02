@@ -1,6 +1,35 @@
 {
   "fixture": "fixtures.json",
+  "documents": "documents/*.md",
+  "splitting": "Nonempty paragraphs; source filename plus #pN ordinal",
   "top_k": 3,
+  "passages": [
+    {
+      "passage_id": "access.md#p1",
+      "source_id": "access.md",
+      "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp."
+    },
+    {
+      "passage_id": "appointments.md#p1",
+      "source_id": "appointments.md",
+      "text": "Book appointments by calling reception on 555-0100. Same-day bookings require staff approval."
+    },
+    {
+      "passage_id": "appointments.md#p2",
+      "source_id": "appointments.md",
+      "text": "Appointment cancellations require staff approval. Contact reception to request a cancellation."
+    },
+    {
+      "passage_id": "billing.md#p1",
+      "source_id": "billing.md",
+      "text": "The clinic accepts Cedar insurance. Bring your insurance card and photo identification."
+    },
+    {
+      "passage_id": "clinic-hours.md#p1",
+      "source_id": "clinic-hours.md",
+      "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday."
+    }
+  ],
   "keyword": {
     "supported_hit_at_3": 7,
     "supported_questions": 8,
@@ -12,83 +41,86 @@
         "id": "q1",
         "text": "When does the clinic open?",
         "expected": [
-          "hours-1"
+          "clinic-hours.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "hours-1",
-            "source_id": "clinic-hours.md",
-            "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
+            "passage_id": "access.md#p1",
+            "source_id": "access.md",
+            "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
             "score": 1
           },
           {
-            "passage_id": "insurance-1",
+            "passage_id": "billing.md#p1",
             "source_id": "billing.md",
             "text": "The clinic accepts Cedar insurance. Bring your insurance card and photo identification.",
             "score": 1
           },
           {
-            "passage_id": "parking-1",
-            "source_id": "access.md",
-            "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
+            "passage_id": "clinic-hours.md#p1",
+            "source_id": "clinic-hours.md",
+            "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
             "score": 1
           }
         ],
         "missed": [],
         "irrelevant": [
-          "insurance-1",
-          "parking-1"
-        ]
+          "access.md#p1",
+          "billing.md#p1"
+        ],
+        "answer": "The clinic opens Monday to Friday from 09:00 to 17:00. Source: clinic-hours.md"
       },
       {
         "id": "q2",
         "text": "How do I book appointments?",
         "expected": [
-          "booking-1"
+          "appointments.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "booking-1",
+            "passage_id": "appointments.md#p1",
             "source_id": "appointments.md",
             "text": "Book appointments by calling reception on 555-0100. Same-day bookings require staff approval.",
             "score": 2
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "Book appointments by calling reception on 555-0100. Source: appointments.md"
       },
       {
         "id": "q3",
         "text": "Is parking free?",
         "expected": [
-          "parking-1"
+          "access.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "parking-1",
+            "passage_id": "access.md#p1",
             "source_id": "access.md",
             "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
             "score": 2
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "Yes. Free parking is available behind the clinic. Source: access.md"
       },
       {
         "id": "q4",
         "text": "Do cancellations require approval?",
         "expected": [
-          "cancel-1"
+          "appointments.md#p2"
         ],
         "hits": [
           {
-            "passage_id": "cancel-1",
+            "passage_id": "appointments.md#p2",
             "source_id": "appointments.md",
             "text": "Appointment cancellations require staff approval. Contact reception to request a cancellation.",
             "score": 3
           },
           {
-            "passage_id": "booking-1",
+            "passage_id": "appointments.md#p1",
             "source_id": "appointments.md",
             "text": "Book appointments by calling reception on 555-0100. Same-day bookings require staff approval.",
             "score": 2
@@ -96,69 +128,73 @@
         ],
         "missed": [],
         "irrelevant": [
-          "booking-1"
-        ]
+          "appointments.md#p1"
+        ],
+        "answer": "Yes. Appointment cancellations require staff approval. Source: appointments.md"
       },
       {
         "id": "q5",
         "text": "Which insurance does the clinic accept?",
         "expected": [
-          "insurance-1"
+          "billing.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "insurance-1",
+            "passage_id": "billing.md#p1",
             "source_id": "billing.md",
             "text": "The clinic accepts Cedar insurance. Bring your insurance card and photo identification.",
             "score": 2
           },
           {
-            "passage_id": "hours-1",
-            "source_id": "clinic-hours.md",
-            "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
+            "passage_id": "access.md#p1",
+            "source_id": "access.md",
+            "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
             "score": 1
           },
           {
-            "passage_id": "parking-1",
-            "source_id": "access.md",
-            "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
+            "passage_id": "clinic-hours.md#p1",
+            "source_id": "clinic-hours.md",
+            "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
             "score": 1
           }
         ],
         "missed": [],
         "irrelevant": [
-          "hours-1",
-          "parking-1"
-        ]
+          "access.md#p1",
+          "clinic-hours.md#p1"
+        ],
+        "answer": "The clinic accepts Cedar insurance. Source: billing.md"
       },
       {
         "id": "q6",
         "text": "Where can I leave my car?",
         "expected": [
-          "parking-1"
+          "access.md#p1"
         ],
         "hits": [],
         "missed": [
-          "parking-1"
+          "access.md#p1"
         ],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q7",
         "text": "How much does parking cost?",
         "expected": [
-          "parking-1"
+          "access.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "parking-1",
+            "passage_id": "access.md#p1",
             "source_id": "access.md",
             "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
             "score": 1
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "Parking is free. Source: access.md"
       },
       {
         "id": "q8",
@@ -166,30 +202,31 @@
         "expected": [],
         "hits": [
           {
-            "passage_id": "insurance-1",
+            "passage_id": "billing.md#p1",
             "source_id": "billing.md",
             "text": "The clinic accepts Cedar insurance. Bring your insurance card and photo identification.",
             "score": 2
           },
           {
-            "passage_id": "hours-1",
-            "source_id": "clinic-hours.md",
-            "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
+            "passage_id": "access.md#p1",
+            "source_id": "access.md",
+            "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
             "score": 1
           },
           {
-            "passage_id": "parking-1",
-            "source_id": "access.md",
-            "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
+            "passage_id": "clinic-hours.md#p1",
+            "source_id": "clinic-hours.md",
+            "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
             "score": 1
           }
         ],
         "missed": [],
         "irrelevant": [
-          "hours-1",
-          "insurance-1",
-          "parking-1"
-        ]
+          "access.md#p1",
+          "billing.md#p1",
+          "clinic-hours.md#p1"
+        ],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q9",
@@ -197,7 +234,7 @@
         "expected": [],
         "hits": [
           {
-            "passage_id": "booking-1",
+            "passage_id": "appointments.md#p1",
             "source_id": "appointments.md",
             "text": "Book appointments by calling reception on 555-0100. Same-day bookings require staff approval.",
             "score": 2
@@ -205,8 +242,9 @@
         ],
         "missed": [],
         "irrelevant": [
-          "booking-1"
-        ]
+          "appointments.md#p1"
+        ],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q10",
@@ -214,39 +252,41 @@
         "expected": [],
         "hits": [],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q11",
         "text": "Is the clinic open on Sunday?",
         "expected": [
-          "hours-1"
+          "clinic-hours.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "hours-1",
+            "passage_id": "clinic-hours.md#p1",
             "source_id": "clinic-hours.md",
             "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
             "score": 2
           },
           {
-            "passage_id": "insurance-1",
-            "source_id": "billing.md",
-            "text": "The clinic accepts Cedar insurance. Bring your insurance card and photo identification.",
+            "passage_id": "access.md#p1",
+            "source_id": "access.md",
+            "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
             "score": 1
           },
           {
-            "passage_id": "parking-1",
-            "source_id": "access.md",
-            "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
+            "passage_id": "billing.md#p1",
+            "source_id": "billing.md",
+            "text": "The clinic accepts Cedar insurance. Bring your insurance card and photo identification.",
             "score": 1
           }
         ],
         "missed": [],
         "irrelevant": [
-          "insurance-1",
-          "parking-1"
-        ]
+          "access.md#p1",
+          "billing.md#p1"
+        ],
+        "answer": "No. The clinic is closed on Saturday and Sunday. Source: clinic-hours.md"
       },
       {
         "id": "q12",
@@ -254,7 +294,8 @@
         "expected": [],
         "hits": [],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       }
     ]
   },
@@ -270,110 +311,117 @@
         "id": "q1",
         "text": "When does the clinic open?",
         "expected": [
-          "hours-1"
+          "clinic-hours.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "hours-1",
+            "passage_id": "clinic-hours.md#p1",
             "source_id": "clinic-hours.md",
             "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
             "score": 0.1
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "The clinic opens Monday to Friday from 09:00 to 17:00. Source: clinic-hours.md"
       },
       {
         "id": "q2",
         "text": "How do I book appointments?",
         "expected": [
-          "booking-1"
+          "appointments.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "booking-1",
+            "passage_id": "appointments.md#p1",
             "source_id": "appointments.md",
             "text": "Book appointments by calling reception on 555-0100. Same-day bookings require staff approval.",
             "score": 0.11
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "Book appointments by calling reception on 555-0100. Source: appointments.md"
       },
       {
         "id": "q3",
         "text": "Is parking free?",
         "expected": [
-          "parking-1"
+          "access.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "parking-1",
+            "passage_id": "access.md#p1",
             "source_id": "access.md",
             "text": "Free parking is available behind the clinic. The entrance has a wheelchair ramp.",
             "score": 0.1
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "Yes. Free parking is available behind the clinic. Source: access.md"
       },
       {
         "id": "q4",
         "text": "Do cancellations require approval?",
         "expected": [
-          "cancel-1"
+          "appointments.md#p2"
         ],
         "hits": [
           {
-            "passage_id": "cancel-1",
+            "passage_id": "appointments.md#p2",
             "source_id": "appointments.md",
             "text": "Appointment cancellations require staff approval. Contact reception to request a cancellation.",
             "score": 0.06428572
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "Yes. Appointment cancellations require staff approval. Source: appointments.md"
       },
       {
         "id": "q5",
         "text": "Which insurance does the clinic accept?",
         "expected": [
-          "insurance-1"
+          "billing.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "insurance-1",
+            "passage_id": "billing.md#p1",
             "source_id": "billing.md",
             "text": "The clinic accepts Cedar insurance. Bring your insurance card and photo identification.",
             "score": 0.05
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "The clinic accepts Cedar insurance. Source: billing.md"
       },
       {
         "id": "q6",
         "text": "Where can I leave my car?",
         "expected": [
-          "parking-1"
+          "access.md#p1"
         ],
         "hits": [],
         "missed": [
-          "parking-1"
+          "access.md#p1"
         ],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q7",
         "text": "How much does parking cost?",
         "expected": [
-          "parking-1"
+          "access.md#p1"
         ],
         "hits": [],
         "missed": [
-          "parking-1"
+          "access.md#p1"
         ],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q8",
@@ -381,7 +429,8 @@
         "expected": [],
         "hits": [],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q9",
@@ -389,7 +438,8 @@
         "expected": [],
         "hits": [],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q10",
@@ -397,24 +447,26 @@
         "expected": [],
         "hits": [],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       },
       {
         "id": "q11",
         "text": "Is the clinic open on Sunday?",
         "expected": [
-          "hours-1"
+          "clinic-hours.md#p1"
         ],
         "hits": [
           {
-            "passage_id": "hours-1",
+            "passage_id": "clinic-hours.md#p1",
             "source_id": "clinic-hours.md",
             "text": "The clinic opens Monday to Friday from 09:00 to 17:00. It is closed on Saturday and Sunday.",
             "score": 0.00625
           }
         ],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "No. The clinic is closed on Saturday and Sunday. Source: clinic-hours.md"
       },
       {
         "id": "q12",
@@ -422,7 +474,8 @@
         "expected": [],
         "hits": [],
         "missed": [],
-        "irrelevant": []
+        "irrelevant": [],
+        "answer": "I do not know from the clinic documents"
       }
     ]
   }

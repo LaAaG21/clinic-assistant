@@ -1,164 +1,105 @@
-# Clinic-document retrieval comparison
+# Clinic-document retrieval: research note
 
-Date: 2026-11-02. Resolves the research scope of [issue #5](https://github.com/LaAaG21/clinic-assistant/issues/5).
+2026-11-02 | [Refs #5](https://github.com/LaAaG21/clinic-assistant/issues/5)
 
-## Question and scope
+**Question:** Which small retrieval approach finds clinic evidence with traceable
+sources? **Recommendation for share-out:** start conservatively with PostgreSQL
+full-text search; evaluate recall further. Team agreement and the ADR belong in
+a follow-up PR. This experiment does not close #5.
 
-What small retrieval approach can return clinic passages with reliable source
-identifiers, using the project's existing PostgreSQL stack?
+**Splitting:** four synthetic files in `experiments/retrieval/documents/` produce
+five passages at blank lines. Normalize internal whitespace; retain filename as
+`source_id` and filename plus `#pN` as passage ID. Paragraphs keep short policies
+intact while separating booking/cancellation. No overlap is needed here. Production
+needs size limits and versioned locations: paragraph reordering changes ordinals.
+Carry source metadata through context assembly and citation rendering for auditing.
 
-This standalone experiment uses five explicitly synthetic English passages and
-twelve fixed questions. There are no real patient records, model calls, production
-adapters, or additional database/vector services. The fixtures include eight
-supported questions and four unsupported inputs. Expected matches were specified
-in `experiments/retrieval/fixtures.json`; an empty expected list means no passage
-answers the question. It does not mean that every such question is suitable for
-the assistant to answer.
+**Measured options:** keyword overlap (lowercase whole words, fixed stop words,
+any overlap) and PostgreSQL English `to_tsvector`/`plainto_tsquery`, `@@`,
+`ts_rank_cd`. Same questions/top-3; descending score, then passage-ID tie break.
+Full-text requires all remaining lexemes; stop-word lists also differ. This compares
+recipes, not stemming alone. psycopg binds inputs with parameters/`executemany`;
+temporary tables roll back. No real-model calls or API keys.
 
-## Options and method
+**Embeddings: documentation only, not measured.** Vectors support similarity search
+and may improve car/parking paraphrases; that is untested here. They add model
+selection/versioning, inference cost, re-embedding, vector storage, and threshold
+calibration. Similarity cannot establish factual support. No vector service was
+added; evaluate the same unsupported inputs and provenance before choosing it.
 
-1. **Keyword baseline:** lowercase ASCII whole-word sets, a fixed small stop-word
-   list, and overlap count. Return any positive overlap, ordered by count descending
-   and passage ID ascending, capped at three. No stemming or synonyms.
-2. **PostgreSQL full-text search:** `to_tsvector('english', body)` and
-   `plainto_tsquery('english', question)`, filtered using `@@`, ranked by
-   `ts_rank_cd` descending, then passage ID ascending, capped at three. The text
-   search configuration is explicit. Only passage text is searched; source names
-   are metadata, not extra search terms.
+## Reproduce
 
-Both use identical passages, full unmodified questions, expected labels, and top-k.
-The comparison intentionally measures two simple end-to-end retrieval recipes:
-the baseline matches **any** remaining word, while `plainto_tsquery` requires
-**all** remaining lexemes. Their stop-word lists also differ. Thus the result
-does not isolate stemming, ranking, or PostgreSQL itself as the cause of quality
-differences. No threshold tuning or performance benchmark was performed.
-
-The SQL runs in a transaction using a temporary table, then rolls back; no
-application tables are changed. No index is needed for five rows. The output
-retains passage ID, original source ID, complete text, and score for every hit,
-plus per-question misses and irrelevant hits. Scores across methods are not
-comparable probabilities.
-
-## Reproduction
-
-From the repository root, with Python 3.10+ and Docker Compose available:
+Python 3.12+, uv, Docker Compose. From the repository root:
 
 ```sh
-docker compose -p clinic-retrieval -f experiments/retrieval/compose.yaml up -d --wait
-docker compose -p clinic-retrieval -f experiments/retrieval/compose.yaml ps -q postgres
+cd experiments/retrieval
+# Copy .env.example to .env; choose a URL-safe POSTGRES_PASSWORD.
+uv sync --group dev --locked
+docker compose -p clinic-retrieval up -d --wait
 ```
 
-Copy the container ID printed by the second command into `CONTAINER_ID` below:
+Set `DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@127.0.0.1:55435/postgres`
+(bash: `export DATABASE_URL='...'`; PowerShell: `$env:DATABASE_URL='...'`), then:
 
 ```sh
-python experiments/retrieval/compare.py --container CONTAINER_ID --output experiments/retrieval/results.json
-python -m unittest discover -s experiments/retrieval -p test_compare.py -v
-docker compose -p clinic-retrieval -f experiments/retrieval/compose.yaml down -v
+uv run compare.py --output results.json
+uv run pytest -q
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy compare.py fake_llm.py test_compare.py
+docker compose -p clinic-retrieval down -v
 ```
 
-Alternatively, use an existing PostgreSQL server and a local `psql` executable.
-Set libpq's `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER` and authentication as needed,
-then run:
+An existing test database also works via `DATABASE_URL`; no psql/container ID.
+`uv run compare.py --keyword-only` runs the baseline. Connection failure exits
+nonzero without overwriting a report.
 
-```sh
-python experiments/retrieval/compare.py --psql /path/to/psql --output experiments/retrieval/results.json
-```
+## Findings
 
-The connection role needs permission to create temporary tables. Use a test
-database. Connection settings stay outside the report. Missing PostgreSQL or a
-failed SQL command exits nonzero without writing a new report; an existing report
-is not evidence of a successful rerun. For baseline debugging only:
+Full questions/expected labels: `fixtures.json`; passages, source names, scores,
+misses, irrelevant hits, and answers: `results.json`. Aliases: H=`clinic-hours.md#p1`,
+B=`appointments.md#p1`, C=`appointments.md#p2`, P=`access.md#p1`, I=`billing.md#p1`.
+Results are ranked; IDs absent from Expected are irrelevant; `-` means no hits.
 
-```sh
-python experiments/retrieval/compare.py --keyword-only
-```
-
-The checked-in full report was measured using PostgreSQL **18.6**, Python 3.14.8,
-and portable Windows `psql`, with an isolated local database. Docker was unavailable
-on the authoring machine, so the Compose path was supplied but not executed there.
-The same SQL is used by both invocation paths. The four harness unit tests passed.
-
-## Actual findings
-
-IDs below are in returned rank order. `—` means no hits. These are retrieval
-results, not generated answers; inspect `experiments/retrieval/results.json` for
-the actual passages, original source names, scores, misses, and irrelevant hits.
-
-| Question | Expected passage | Keyword actual | PostgreSQL actual |
+| Question | Expected | Keyword | PostgreSQL |
 | --- | --- | --- | --- |
-| q1: When does the clinic open? | hours-1 | hours-1, insurance-1, parking-1 | hours-1 |
-| q2: How do I book appointments? | booking-1 | booking-1 | booking-1 |
-| q3: Is parking free? | parking-1 | parking-1 | parking-1 |
-| q4: Do cancellations require approval? | cancel-1 | cancel-1, booking-1 | cancel-1 |
-| q5: Which insurance does the clinic accept? | insurance-1 | insurance-1, hours-1, parking-1 | insurance-1 |
-| q6: Where can I leave my car? | parking-1 | — | — |
-| q7: How much does parking cost? | parking-1 | parking-1 | — |
-| q8: Does the clinic accept Maple insurance? | — | insurance-1, hours-1, parking-1 | — |
-| q9: Can I book surgery appointments? | — | booking-1 | — |
-| q10: What antibiotic should I take? | — | — | — |
-| q11: Is the clinic open on Sunday? | hours-1 | hours-1, insurance-1, parking-1 | hours-1 |
-| q12: the and is | — | — | — |
+| q1 Opening hours | H | P,I,H | H |
+| q2 Book appointments | B | B | B |
+| q3 Free parking | P | P | P |
+| q4 Cancellation approval | C | C,B | C |
+| q5 Accepted insurance | I | I,P,H | I |
+| q6 Leave my car | P | - | - |
+| q7 Parking cost | P | P | - |
+| q8 Maple insurance | - | I,P,H | - |
+| q9 Surgery bookings | - | B | - |
+| q10 Antibiotic advice | - | - | - |
+| q11 Open Sunday | H | H,P,I | H |
+| q12 Stop words | - | - | - |
 
-| Metric | Keyword | PostgreSQL |
-| --- | --- | --- |
-| Supported questions with at least one expected hit in top 3 | 7/8 | 6/8 |
-| Unsupported questions with any hit (lower is better) | 2/4 | 0/4 |
-| Total irrelevant passages across all questions | 11 | 0 |
+Keyword: **7/8** supported hits, **2/4** unsupported inputs with hits, **11** irrelevant
+passages; PostgreSQL: **6/8, 0/4, 0**. Both miss car/parking; conjunction misses
+parking cost. Maple/surgery keyword hits are insufficient. q11 must preserve “closed”.
 
-Passage/source mapping: hours-1 → `clinic-hours.md`; booking-1 and cancel-1 →
-`appointments.md`; parking-1 → `access.md`; insurance-1 → `billing.md`.
-Distinct passage IDs prevent two chunks from the same document being conflated.
+**Fake model:** only the question and retrieved IDs/source names/text cross its
+boundary; no corpus or expected labels. Fixed replies require the supporting
+source/text substring. Recorded examples for both methods:
 
-The keyword method retrieves noise from generic words such as “clinic” and
-“approval”, including booking evidence for a cancellation question. It returns
-Cedar insurance evidence for a Maple question and general booking evidence for
-surgery. Neither supports those questions. PostgreSQL handles open/opens and
-accept/accepts, while its conjunction excludes those unsupported inputs. Both
-methods miss the car/parking paraphrase. PostgreSQL misses q7 because “cost” is
-absent, even though “Free parking” answers it. q11 retrieves a passage that says
-Sunday is closed; retrieval must preserve that negation when answering.
+- q1: `The clinic opens Monday to Friday from 09:00 to 17:00. Source: clinic-hours.md`
+- q10, empty retrieval: `I do not know from the clinic documents`
 
-## Recommendation and risks
+q8/q9 also abstain despite keyword noise. The fake demonstrates the interface,
+not general answerability. Unsupported evidence needs abstention/staff referral;
+avoid automatic keyword fallback. Emergency/medical-advice policies remain separate.
 
-Propose PostgreSQL English full-text search as the first conservative retrieval
-candidate, keeping keyword search as an experiment baseline. It produces cleaner
-candidate sets here and fits the planned database without another service. This
-is a small-sample engineering recommendation, not proof of production quality.
-The proposed ADR remains pending team agreement.
+**Verified:** psycopg 3.3.6, PostgreSQL 18.6, Python 3.14.8; two identical reports,
+eight pytest checks including real SQL/quotes/source preservation, Ruff, strict
+mypy. Revised Compose was not run here; the reviewer's earlier Compose verification
+covered the psql version. Tiny English fixtures establish neither scale nor
+robustness to typos, stale/conflicting policies, or other languages. Align the
+PostgreSQL major with the checkpoint experiment (17.6) at share-out.
 
-Strict conjunction loses recall on natural questions; neither recipe handles
-synonyms reliably. English stemming is unsuitable as an untested multilingual
-strategy. Typos, abbreviations, conflicting policies, stale documents, longer
-chunks, and multiple sources per answer need a larger, independently reviewed
-evaluation. Consider controlled query normalization and reviewed synonyms in a
-follow-up experiment; measure their unsupported-hit rate before enabling them.
-Do not silently fall back to broad keyword matches when full-text search is empty.
-If the corpus grows, evaluate a GIN index and actual latency; these five rows say
-nothing about scale.
-
-Unsupported-answer handling must be separate from retrieval: no hits should lead
-to an explicit lack-of-evidence response and referral to clinic staff. A hit is
-only a candidate: verify that its text supports the specific entity, requested
-fact, and polarity before answering; otherwise abstain. Never infer Maple coverage
-from Cedar coverage or surgery availability from general booking instructions.
-No rank threshold in this experiment establishes answerability. Emergency handling
-and the prohibition on diagnosis/treatment advice must apply independently of
-search results; q10 is not a medical-safety implementation.
-
-**Learning check:** source identifiers must travel with passage text through
-retrieval, context assembly, answer generation, and citation rendering. Otherwise
-an answer can lose its provenance or cite the wrong document. Preserve both a
-stable passage ID and original source name, and plan document versions/locations
-so staff can audit the exact evidence even after a document changes.
-
-## Official sources
-
-- [PostgreSQL 18: Controlling Text Search](https://www.postgresql.org/docs/18/textsearch-controls.html):
-  vector construction, query conversion, conjunction in `plainto_tsquery`, and
-  cover-density ranking.
-- [PostgreSQL 18: Dictionaries](https://www.postgresql.org/docs/18/textsearch-dictionaries.html):
-  stop words and normalization; synonym handling needs configuration.
-- [PostgreSQL 18: Preferred Index Types](https://www.postgresql.org/docs/18/textsearch-indexes.html):
-  indexes are optional, with GIN preferred for regular text-search workloads.
-- [Python: Regular expressions](https://docs.python.org/3/library/re.html):
-  the standard-library token matching used in the baseline.
+**Official sources:** [PostgreSQL search](https://www.postgresql.org/docs/18/textsearch-controls.html)
+(normalization/conjunction/ranking), [GIN indexes](https://www.postgresql.org/docs/18/textsearch-indexes.html)
+(consider at scale), [psycopg parameters](https://www.psycopg.org/psycopg3/docs/basic/params.html)
+(bind data separately), [OpenAI embeddings](https://developers.openai.com/api/docs/guides/embeddings)
+(vector similarity; documentation only).

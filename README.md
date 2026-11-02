@@ -25,4 +25,3 @@ In development.
 ## Research
 
 - [Clinic-document retrieval comparison](docs/research/clinic-document-retrieval.md)
-- [Proposed retrieval ADR](docs/adr/0001-clinic-document-retrieval.md)

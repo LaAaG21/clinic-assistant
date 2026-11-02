@@ -8,4 +8,4 @@ app = FastAPI(
     description="Backend service for the clinic's existing chat client.",
 )
 
-import os
+CI_FORMAT_PROBE = [1,2,3]

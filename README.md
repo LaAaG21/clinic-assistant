@@ -37,7 +37,8 @@ Open [Swagger UI](http://127.0.0.1:8000/docs),
 [OpenAPI JSON](http://127.0.0.1:8000/openapi.json), or
 [health](http://127.0.0.1:8000/health). Both services bind to localhost. Fake model
 mode needs no API key. This starts the existing foundation; business workflows
-and automatic clinic schema/seed data are not implemented by this packaging task.
+are pending. #25's added automatic schema/seed initialization requirement remains
+blocked on its schema and fixture dependencies.
 See [Docker setup and verification](docs/development/docker.md) for configuration,
 health failure/recovery checks, and the pending #14/#18 merge dependencies.
 

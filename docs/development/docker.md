@@ -5,8 +5,11 @@ shared settings from #18, the PostgreSQL helper from #12, and the real database
 health endpoint from #14. This branch includes the prerequisite commits from
 [PR #48](https://github.com/LaAaG21/clinic-assistant/pull/48) and
 [PR #49](https://github.com/LaAaG21/clinic-assistant/pull/49) for integration testing;
-they still need review and merging. No clinic workflows, schema, seed data, or
-model calls are added by this task.
+they still need review and merging. The source build, settings, database
+connectivity and health integration are verified. **Issue #25 remains incomplete
+under its newly added initialization requirement**; see the dependency section
+below. This branch currently packages the foundation without clinic workflows,
+schema/seed initialization, or model calls.
 
 ## Start from a clean checkout
 
@@ -93,6 +96,36 @@ unhealthy status alone does not restart a container.
 named volume. Do not add `--volumes` unless you intend to delete that project's
 database. For isolated tests, use a distinct `-p` project name, its own env file,
 and free host ports for **every** Compose command.
+
+## Pending automatic initialization requirement
+
+During this implementation, #25 gained a dependency clarification requiring a
+fresh clone and one Compose command to initialize all required schema/seed data
+and include committed document assets. The following inputs are not yet merged
+on `main`; this branch does not create competing SQL or fixtures to bypass them:
+
+- [#22](https://github.com/LaAaG21/clinic-assistant/issues/22): confirmed schema
+  and initialization order. The existing diagram still labels unresolved items.
+- [#19](https://github.com/LaAaG21/clinic-assistant/issues/19): doctors/slots SQL
+  and initialization mount, proposed in open
+  [PR #90](https://github.com/LaAaG21/clinic-assistant/pull/90).
+- [#26](https://github.com/LaAaG21/clinic-assistant/issues/26),
+  [#39](https://github.com/LaAaG21/clinic-assistant/issues/39),
+  [#52](https://github.com/LaAaG21/clinic-assistant/issues/52), and
+  [#40](https://github.com/LaAaG21/clinic-assistant/issues/40): conversation,
+  booking, request, message and approval schema in their agreed dependency order.
+- [#29](https://github.com/LaAaG21/clinic-assistant/issues/29) and
+  [#42](https://github.com/LaAaG21/clinic-assistant/issues/42): repeatable seed data
+  and committed clinic-document/example-message assets; #42 also awaits the
+  document loader in [PR #34](https://github.com/LaAaG21/clinic-assistant/pull/34).
+
+Once those inputs are available, integrate their initialization path and asset
+locations into Compose/the image (including the build-context allowlist), then
+repeat a clean-clone, empty-volume startup and verify required records/assets
+without manual SQL, hidden copying, or host Python. Keep that evidence separate
+from the foundation checks below. Independent candidate verification belongs to
+[#79](https://github.com/LaAaG21/clinic-assistant/issues/79). Until then, this branch
+is ready for review as partial packaging work, not closure of the expanded #25.
 
 ## Recorded verification (November 2, 2026)
 

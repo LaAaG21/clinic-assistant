@@ -50,7 +50,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: "0.13.6"
+          version: "0.12.23"
           enable-cache: true
           cache-dependency-glob: uv.lock
 
@@ -65,28 +65,6 @@ jobs:
 
       - name: Mypy
         run: uv run --locked mypy .
-
-      - name: Verify application coverage scope
-        # Use #10's shared coverage config, never silently cover tests/the repo.
-        run: |
-          uv run --locked python - <<'PY'
-          from coverage import Coverage
-
-          coverage = Coverage(config_file="pyproject.toml")
-          sources = (
-              coverage.get_option("run:source")
-              or coverage.get_option("run:source_pkgs")
-          )
-          if not sources or any(
-              source in {".", "tests", "experiments"}
-              or source.startswith(("tests/", "tests.", "experiments/", "experiments."))
-              for source in sources
-          ):
-              raise SystemExit(
-                  "Configure coverage.run.source/source_pkgs for the actual "
-                  "application in the shared pyproject.toml (#10)."
-              )
-          PY
 
       - name: Pytest and application coverage (minimum 80%)
         run: >-

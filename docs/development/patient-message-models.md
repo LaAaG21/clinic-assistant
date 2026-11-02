@@ -54,12 +54,7 @@ uv run --locked ruff format --check .
 uv run --locked mypy
 ```
 
-Verified on 2026-11-02 using Python 3.12.15 and the committed uv lockfile:
-**44 model/OpenAPI tests + 1 foundation startup test passed (45 total)**;
-application coverage **100%** (64 executable statements); Ruff lint/format and
-strict Mypy passed. Coverage here measures the small boundary-model application,
-not clinical behavior or workflow completeness. All inputs are synthetic; no
-database or model API key is needed. Pydantic is declared as a direct dependency.
+Verified 2026-11-02 (Python 3.12.15, committed lockfile): **37 tests passed**, **100%** coverage of 64 application statements, Ruff lint/format and strict Mypy passed. Synthetic model/OpenAPI checks require no database or model key and do not establish workflow completeness.
 
 Invalid input should be rejected at the API boundary so malformed messages never
 reach classification or side effects, and callers receive actionable field

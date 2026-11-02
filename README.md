@@ -20,12 +20,9 @@ Database access uses plain SQL without an ORM.
 
 ## Status
 
-In development. The application foundation serves OpenAPI and interactive API
-documentation. Clinic workflows, database integration, health reporting, and API
-Docker packaging are separate tasks.
+In development.
 
 ## Local development
-
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run
 these commands from the repository root:
 
@@ -94,3 +91,7 @@ are documented in [Patient-message models](docs/development/patient-message-mode
 ## Research
 
 - [Clinic-document retrieval comparison](docs/research/clinic-document-retrieval.md)
+## Standalone experiments
+
+- [Issue #4: staff approval interrupt/resume](experiments/staff_approval/README.md)
+- [Research note and proposed recommendation](docs/research/004-staff-interrupt-resume.md)

@@ -7,6 +7,7 @@ authors = [{ name = "LaAaG21" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.162,<1",
+    "pydantic>=2,<3",
     "uvicorn>=0.30,<1",
 ]
 

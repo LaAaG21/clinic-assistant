@@ -86,6 +86,11 @@ foundation only, not the planned clinic features. The documented Uvicorn command
 also served `/openapi.json` and `/docs` successfully on a free localhost port,
 without a model key or database URL. GitHub CI execution belongs to #13.
 
+## Patient-message models
+
+Patient-message request/response schemas and their test-only OpenAPI demonstration
+are documented in [Patient-message models](docs/development/patient-message-models.md).
+
 ## Research
 
 - [Clinic-document retrieval comparison](docs/research/clinic-document-retrieval.md)

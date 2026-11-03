@@ -60,3 +60,8 @@ input, malformed JSON, framework 404/405, protocol headers, explicit dependency
 and conflict errors, unexpected/driver/response-validation failures, special
 responses, and production registration. Synthetic private markers must never
 appear in returned bodies. No model key is needed.
+
+Verified 2026-11-03 on the current main baseline: 36 focused handler cases and
+215 total application tests passed with real PostgreSQL enabled; overall
+application coverage 97.84%. Ruff lint/format, strict Mypy, and whitespace checks
+passed. The existing #43 implementation was reused with its authorship preserved.

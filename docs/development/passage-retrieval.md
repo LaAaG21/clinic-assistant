@@ -28,9 +28,9 @@ then the shared Ruff, format, strict Mypy, and coverage commands. Tests use actu
 PostgreSQL for query/ranking behavior, including quotes, empty matches, bounds,
 repeated ties, preserved objects, and connection failure.
 
-Draft pending #28's merge and final suite integration with its actual Passage
-type. No model calls, embeddings, answers, permanent corpus storage, or extra
-retrieval interface is introduced.
+The shared test suite now exercises the merged loader and actual Passage type
+through PostgreSQL retrieval. No model calls, embeddings, answers, permanent
+corpus storage, or extra retrieval interface is introduced.
 
 Verified 2026-11-03: 14 focused cases and 78 total application tests passed with
 real PostgreSQL enabled; retrieval coverage 100%, overall application coverage
@@ -44,5 +44,9 @@ pending #21 loader and #28 splitter returned, in order:
 
 The broad `clinic` query returned 3 by default and 1 with `limit=1`; `astronomy`
 returned `[]`. Objects/metadata were preserved, including original offsets.
-Dependency code was loaded only in the isolated verification process, not copied
-into this PR. Add that integration case to the shared suite once #28 merges.
+The earlier isolated demonstration is now a shared-suite integration test using
+the actual merged modules, including exact CRLF offsets, stable object identity,
+metadata, broad-query bounds, and the zero-match result.
+Completion verification on 2026-11-03: 15 retrieval cases and 128 total tests
+passed with real PostgreSQL enabled; retrieval coverage 100%, overall coverage
+97.79%. Ruff lint/format and strict Mypy passed.

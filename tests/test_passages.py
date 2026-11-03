@@ -1,9 +1,11 @@
 """Small/long fixture documents against the #21 read-only document contract."""
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import pytest
 
+from clinic_assistant.documents import load_document
 from clinic_assistant.passages import MAX_PASSAGE_CHARS, split_document
 
 
@@ -83,3 +85,19 @@ def test_whitespace_run_at_size_boundary_is_omitted_without_text_loss() -> None:
     assert [p.text for p in passages] == ["a" * 998, "b" * 1000]
     assert passages[0].end_char == 998
     assert passages[1].start_char == 1001
+
+
+def test_real_loader_preserves_sources_and_offsets_through_splitting(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "Clinic-hours.md"
+    text = "# Hours\r\nOpen Monday.\r\n\r\n" + "parking availability " * 150
+    path.write_bytes(text.encode("utf-8"))
+    document = load_document(path)
+    passages = split_document(document)
+    assert document.text == text
+    assert passages == split_document(load_document(path))
+    assert len(passages) == 5
+    assert all(p.source_id == p.source_name == path.name for p in passages)
+    assert all(p.text == text[p.start_char : p.end_char] for p in passages)
+    assert all(0 < len(p.text) <= MAX_PASSAGE_CHARS for p in passages)

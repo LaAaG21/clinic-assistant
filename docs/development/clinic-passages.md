@@ -32,13 +32,17 @@ Ruff, format, strict Mypy, and full coverage commands. Tests include empty input
 short paragraphs, line endings, exact size boundaries, long words, long documents,
 non-overlap, exact text locations, stable IDs, and delimiter/Unicode source IDs.
 
-Integration with the real loader remains pending PR #34's merge. This PR stays
-draft until the loader integration check can live in the shared test suite.
-An isolated check against PR #34's actual loader (without copying it into this
-branch) returned `8:hours.md:0:21` and `8:hours.md:25:39` for the two CRLF
+The merged loader is exercised directly by `tests/test_passages.py` using a
+temporary CRLF document with a long paragraph. It checks unchanged loaded text,
+original source identity, exact character slices, bounds, and repeatability.
+The earlier isolated check against PR #34's loader returned
+`8:hours.md:0:21` and `8:hours.md:25:39` for the two CRLF
 paragraphs, each with source ID/name `hours.md` and exact source slices.
 A 3,150-character long sample produced sizes 994, 999, 994, and 159.
 Verified 2026-11-03: 13 focused cases and 77 total application tests passed with
 real PostgreSQL tests enabled; passage coverage 100%, overall coverage 96.81%.
-Ruff lint/format and strict Mypy passed. Full-suite loader integration remains
-pending the dependency merge; the fixture tests do not claim that merge occurred.
+Ruff lint/format and strict Mypy passed. The earlier results above predate the
+final integration case; current completion results are recorded in its PR.
+Completion verification on 2026-11-03: 14 passage cases and 128 total tests passed
+with real PostgreSQL enabled; passage coverage 100%, overall coverage 97.79%.
+Ruff lint/format and strict Mypy passed.

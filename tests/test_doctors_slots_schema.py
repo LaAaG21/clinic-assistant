@@ -1,58 +1,23 @@
 """Doctors and slots schema (#19) on real PostgreSQL, inside a throwaway schema.
 
-Set TEST_DATABASE_URL to run. Each test applies db/init/001_doctors_slots.sql in
-its own uniquely named schema and drops it afterwards, so developer data in the
-public schema is never touched.
+Set TEST_DATABASE_URL to run. The `schema_db` fixture (conftest.py) applies the
+db/init files in their own schema and drops it afterwards.
 """
 
-import os
-from collections.abc import Callable, Iterator
-from contextlib import AbstractContextManager, contextmanager
-from pathlib import Path
-from uuid import uuid4
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 
 import psycopg
 import pytest
-from psycopg import errors, sql
-
-from clinic_assistant.database import DatabaseSettings, connection
-
-SCHEMA_FILE = (
-    Path(__file__).resolve().parents[1] / "db" / "init" / "001_doctors_slots.sql"
-)
+from psycopg import errors
 
 Conn = psycopg.Connection[tuple[object, ...]]
 Connect = Callable[[], AbstractContextManager[Conn]]
 
 
 @pytest.fixture
-def settings() -> DatabaseSettings:
-    url = os.getenv("TEST_DATABASE_URL")
-    if not url:
-        pytest.skip("Set TEST_DATABASE_URL to run real PostgreSQL tests")
-    return DatabaseSettings(url=url)
-
-
-@pytest.fixture
-def db(settings: DatabaseSettings) -> Iterator[Connect]:
-    """Apply the schema file in a unique schema; yield a connection factory."""
-    schema = sql.Identifier("test_schema_" + uuid4().hex)
-    with connection(settings) as conn:
-        conn.execute(sql.SQL("CREATE SCHEMA {}").format(schema))
-        conn.execute(sql.SQL("SET search_path TO {}").format(schema))
-        conn.execute(SCHEMA_FILE.read_bytes())
-
-    @contextmanager
-    def connect() -> Iterator[Conn]:
-        with connection(settings) as conn:
-            conn.execute(sql.SQL("SET search_path TO {}").format(schema))
-            yield conn
-
-    try:
-        yield connect
-    finally:
-        with connection(settings) as conn:
-            conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(schema))
+def db(schema_db: Connect) -> Connect:
+    return schema_db
 
 
 def add_doctor(conn: Conn, doctor_id: str = "doctor_1") -> None:

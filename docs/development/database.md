@@ -11,13 +11,14 @@ Plain SQL files in [`db/init/`](../../db/init/) are mounted read-only into `/doc
 |---|---|---|
 | `001_doctors_slots.sql` | #19 | `doctors`, `slots` |
 | `002_conversations.sql` | #26 (first portion) | `conversations` |
+| `003_bookings.sql` | #39 | `bookings` + partial unique index `bookings_one_active_per_slot` |
 
 Agreed order (#52): doctors/slots → conversations → bookings (#39) → requests (#52) → messages (#26, second portion) → approvals (#40). Each file may only reference tables created by earlier files.
 
 An existing volume is **not** re-initialised. To add a new file to it, apply that file once:
 
 ```bash
-docker compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/init/002_conversations.sql
+docker compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/init/003_bookings.sql
 ```
 
 (`docker compose down -v` followed by `up` also re-runs them, but deletes all local data.)
@@ -28,7 +29,7 @@ docker compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d 
 
 ```bash
 export TEST_DATABASE_URL=postgresql://clinic:<your-password>@127.0.0.1:5432/clinic
-uv run --locked pytest tests/test_doctors_slots_schema.py tests/test_conversations_schema.py -v
+uv run --locked pytest tests/test_doctors_slots_schema.py tests/test_conversations_schema.py tests/test_bookings_schema.py -v
 ```
 
 The shared `schema_db` fixture in `tests/conftest.py` creates `test_schema_<uuid>`, applies every `db/init/*.sql` file there in name order (as on a fresh volume) and drops it, so `public` data stays intact.
@@ -37,8 +38,13 @@ The shared `schema_db` fixture in `tests/conftest.py` creates `test_schema_<uuid
 |---|---|
 | 2026-11-02 (#19) | doctors/slots 15 passed in 2.4s; full suite 79 passed, coverage 95% |
 | 2026-11-03 (#26) | conversations 6 passed, doctors/slots 15 passed; full suite 98 passed, coverage 96% |
+| 2026-11-03 (#39) | bookings 14 passed (4 runs in a row), including a two-connection race for one slot; full suite 234 passed |
 
-A fresh volume (`POSTGRES_PORT=55432 docker compose -p clinic-init-check up -d --wait db`) logged `running .../001_doctors_slots.sql` then `running .../002_conversations.sql` and created `conversations`, `doctors`, `slots`; the throwaway project was then removed with `docker compose -p clinic-init-check down -v`.
+A fresh volume (`POSTGRES_PORT=55432 docker compose -p clinic-init-check up -d --wait db`) ran `001`, `002` and `003` in order and created `bookings`, `conversations`, `doctors`, `slots` plus `bookings_one_active_per_slot`; the throwaway project was then removed with `docker compose -p clinic-init-check down -v`.
+
+### Why PostgreSQL, not Python, rejects a second active booking
+
+A Python "is this slot free?" check followed by an insert lets two concurrent requests both read "free" and both insert. The partial unique index is checked inside PostgreSQL: the second transaction waits for the first, then fails with `UniqueViolation` on `bookings_one_active_per_slot` once the first commits. `test_concurrent_bookings_for_one_slot_have_one_winner` shows this with two real connections.
 
 ## Setup
 

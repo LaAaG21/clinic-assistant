@@ -92,6 +92,7 @@ def test_explicit_timeouts_and_model_key(environment: dict[str, str]) -> None:
         DB_QUERY_TIMEOUT_MS="250",
         MODEL_BACKEND="openai",
         OPENAI_API_KEY="synthetic-key-marker",
+        OPENAI_MODEL="configured-test-model",
     )
     result = settings.load_settings(environment)
     assert result.database.connect_timeout_seconds == 3

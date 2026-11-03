@@ -2,11 +2,14 @@
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 import psycopg
 import pytest
 
 from clinic_assistant.database import DatabaseSettings
+from clinic_assistant.documents import load_document
+from clinic_assistant.passages import split_document
 from clinic_assistant.retrieval import retrieve
 
 
@@ -100,3 +103,34 @@ def test_unavailable_database_is_not_a_successful_empty_result() -> None:
     settings = DatabaseSettings("postgresql://postgres@127.0.0.1:1/postgres")
     with pytest.raises(psycopg.OperationalError):
         retrieve("clinic", [PassageFixture("p", "clinic")], settings)
+
+
+def test_real_document_pipeline_preserves_passages_and_bounds(
+    tmp_path: Path, settings: DatabaseSettings
+) -> None:
+    corpus = []
+    for name, text in {
+        "parking.md": (
+            "Free parking behind clinic.\r\n\r\nClinic parking permit available."
+        ),
+        "hours.md": "Clinic opens Monday.",
+        "billing.md": "Clinic accepts Cedar insurance.",
+    }.items():
+        path = tmp_path / name
+        path.write_bytes(text.encode("utf-8"))
+        corpus.extend(split_document(load_document(path)))
+    results = retrieve("parking", corpus, settings)
+    assert [p.passage_id for p in results] == [
+        "10:parking.md:0:27",
+        "10:parking.md:31:63",
+    ]
+    assert [p.text for p in results] == [
+        "Free parking behind clinic.",
+        "Clinic parking permit available.",
+    ]
+    assert all(p.source_id == p.source_name == "parking.md" for p in results)
+    assert all(any(p is original for original in corpus) for p in results)
+    assert retrieve("parking", corpus, settings) == results
+    assert len(retrieve("clinic", corpus, settings)) == 3
+    assert len(retrieve("clinic", corpus, settings, limit=1)) == 1
+    assert retrieve("astronomy", corpus, settings) == []

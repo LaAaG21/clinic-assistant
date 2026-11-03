@@ -2,9 +2,16 @@
 
 import asyncio
 
-from openai import AsyncOpenAI
+from openai import (
+    APIConnectionError,
+    APIResponseValidationError,
+    APIStatusError,
+    APITimeoutError,
+    AsyncOpenAI,
+)
 from openai.types.responses import ResponseInputParam
 
+from clinic_assistant.errors import DependencyFailure
 from clinic_assistant.model_adapter import ModelInput
 from clinic_assistant.settings import AppSettings, SettingsError
 
@@ -37,15 +44,38 @@ class OpenAIModelAdapter:
         request: ResponseInputParam = [
             {"role": message.role, "content": message.content} for message in messages
         ]
-        async with (
-            asyncio.timeout(settings.openai_timeout_seconds),
-            AsyncOpenAI(
-                api_key=settings.openai_api_key.get_secret_value(),
-                timeout=float(settings.openai_timeout_seconds),
-                max_retries=settings.openai_max_retries,
-            ) as client,
-        ):
-            response = await client.responses.create(
-                model=settings.openai_model, input=request, store=False
-            )
-            return response.output_text
+        deadline = asyncio.timeout(settings.openai_timeout_seconds)
+        try:
+            async with (
+                deadline,
+                AsyncOpenAI(
+                    api_key=settings.openai_api_key.get_secret_value(),
+                    timeout=float(settings.openai_timeout_seconds),
+                    max_retries=settings.openai_max_retries,
+                ) as client,
+            ):
+                response = await client.responses.create(
+                    model=settings.openai_model, input=request, store=False
+                )
+                if (
+                    response.status != "completed"
+                    or response.error is not None
+                    or response.incomplete_details is not None
+                    or not response.output_text.strip()
+                ):
+                    raise DependencyFailure()
+                return response.output_text
+        except APITimeoutError as exc:
+            raise DependencyFailure("dependency_timeout") from exc
+        except APIStatusError as exc:
+            raise DependencyFailure(
+                "dependency_timeout"
+                if exc.status_code in (408, 504)
+                else "dependency_unavailable"
+            ) from exc
+        except (APIConnectionError, APIResponseValidationError) as exc:
+            raise DependencyFailure() from exc
+        except TimeoutError as exc:
+            if not deadline.expired():
+                raise  # An unrelated programming/hook timeout is not a provider outage.
+            raise DependencyFailure("dependency_timeout") from exc

@@ -10,6 +10,7 @@ import pytest
 from openai import AsyncOpenAI, InternalServerError
 
 from clinic_assistant import openai_adapter
+from clinic_assistant.errors import DependencyFailure
 from clinic_assistant.model_adapter import FakeModelAdapter, ModelAdapter, ModelMessage
 from clinic_assistant.settings import AppSettings, SettingsError, load_settings
 
@@ -47,7 +48,7 @@ def sdk_response(text: str) -> dict[str, Any]:
     }
 
 
-@pytest.mark.parametrize("output", ['{"intent":"clinic_question"}', " raw reply ", ""])
+@pytest.mark.parametrize("output", ['{"intent":"clinic_question"}', " raw reply "])
 def test_shared_contract_real_sdk_shape_timeout_and_closed_client(
     output: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -118,8 +119,10 @@ def test_bounded_sdk_retries_propagate_failure_and_close(
     adapter = openai_adapter.OpenAIModelAdapter(
         load_settings(environment(OPENAI_MAX_RETRIES=str(retries)))
     )
-    with pytest.raises(InternalServerError):
+    with pytest.raises(DependencyFailure) as error:
         asyncio.run(adapter.generate((ModelMessage("user", "Question"),)))
+    assert error.value.code == "dependency_unavailable"
+    assert isinstance(error.value.__cause__, InternalServerError)
     assert attempts == retries + 1
     assert clients[0].is_closed()
 
@@ -145,8 +148,9 @@ def test_total_deadline_cancels_mocked_wait_and_closes(
     adapter = openai_adapter.OpenAIModelAdapter(
         load_settings(environment(OPENAI_TIMEOUT_SECONDS="1"))
     )
-    with pytest.raises(TimeoutError):
+    with pytest.raises(DependencyFailure) as error:
         asyncio.run(adapter.generate((ModelMessage("user", "Question"),)))
+    assert error.value.code == "dependency_timeout"
     assert clients[0].is_closed()
 
 

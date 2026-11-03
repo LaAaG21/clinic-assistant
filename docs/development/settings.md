@@ -15,12 +15,18 @@ do not echo input values, open database/model connections, or implicitly read
 | `CLINIC_TIMEZONE` | Required available IANA timezone; no machine-timezone default. `Asia/Dubai` in `.env.example` is an example, not a new clinic-policy decision. |
 | `MODEL_BACKEND` | `fake` (default) or `openai`. This selects configuration, not an adapter implementation. |
 | `OPENAI_API_KEY` | Required only for `openai`, stored as `SecretStr` and omitted from settings repr. Fake mode needs no key and discards any supplied key. |
+| `OPENAI_MODEL` | Required only for `openai`; no model is silently selected. |
+| `OPENAI_TIMEOUT_SECONDS` | Integer 1..120, default 10; SDK timeout and whole-call deadline. |
+| `OPENAI_MAX_RETRIES` | Integer 0..2, default 0; bounded SDK retries inside the whole-call deadline. |
 
 `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_PORT` keep their
 existing #11 Compose meanings. The application uses `DATABASE_URL`, as #12 does;
 it does not reconstruct a competing connection string from the Compose variables.
 Keep the example's connection details consistent with the service. A container's
 internal database port can differ from the port published to the developer host.
+
+The #53 [real adapter](openai-model-adapter.md) consumes these validated fields;
+fake mode requires no provider settings. This loader still performs no model I/O.
 
 Call `get_settings()` at the consumer's initialization boundary, then pass the
 validated fields to the existing helpers rather than re-reading the environment:

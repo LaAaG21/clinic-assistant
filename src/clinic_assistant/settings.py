@@ -24,6 +24,9 @@ class AppSettings:
     clinic_timezone: str
     model_backend: Literal["fake", "openai"] = "fake"
     openai_api_key: SecretStr | None = field(default=None, repr=False)
+    openai_model: str | None = None
+    openai_timeout_seconds: int = 10
+    openai_max_retries: int = 0
 
 
 def _required(environment: Mapping[str, str], name: str) -> str:
@@ -90,8 +93,27 @@ def load_settings(environment: Mapping[str, str] | None = None) -> AppSettings:
     if backend not in ("fake", "openai"):
         raise SettingsError("MODEL_BACKEND must be fake or openai")
     mode: Literal["fake", "openai"] = "openai" if backend == "openai" else "fake"
-    key = SecretStr(_required(values, "OPENAI_API_KEY")) if mode == "openai" else None
-    return AppSettings(database, timezone, mode, key)
+    if mode == "fake":
+        return AppSettings(database, timezone)
+    key = SecretStr(_required(values, "OPENAI_API_KEY"))
+    model = _required(values, "OPENAI_MODEL")
+    timeout = _model_integer(values, "OPENAI_TIMEOUT_SECONDS", 10, 1, 120)
+    retries = _model_integer(values, "OPENAI_MAX_RETRIES", 0, 0, 2)
+    return AppSettings(database, timezone, mode, key, model, timeout, retries)
+
+
+def _model_integer(
+    values: Mapping[str, str], name: str, default: int, minimum: int, maximum: int
+) -> int:
+    try:
+        value = int(values.get(name, str(default)))
+        if not minimum <= value <= maximum:
+            raise ValueError
+    except ValueError:
+        raise SettingsError(
+            f"{name} must be an integer from {minimum} to {maximum}"
+        ) from None
+    return value
 
 
 @lru_cache(maxsize=1)

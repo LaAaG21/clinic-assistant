@@ -10,25 +10,35 @@ Plain SQL files in [`db/init/`](../../db/init/) are mounted read-only into `/doc
 | File | Issue | Tables |
 |---|---|---|
 | `001_doctors_slots.sql` | #19 | `doctors`, `slots` |
+| `002_conversations.sql` | #26 (first portion) | `conversations` |
 
-An existing volume is **not** re-initialised. To add new files to it, apply them once:
+Agreed order (#52): doctors/slots → conversations → bookings (#39) → requests (#52) → messages (#26, second portion) → approvals (#40). Each file may only reference tables created by earlier files.
+
+An existing volume is **not** re-initialised. To add a new file to it, apply that file once:
 
 ```bash
-docker compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/init/001_doctors_slots.sql
+docker compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/init/002_conversations.sql
 ```
 
 (`docker compose down -v` followed by `up` also re-runs them, but deletes all local data.)
 
 `timestamptz` stores absolute instants; requiring an explicit offset in input (#6, RFC 3339) is the API's job, because PostgreSQL accepts offset-less text using the session timezone.
 
-### Schema tests (#19)
+### Schema tests
 
 ```bash
 export TEST_DATABASE_URL=postgresql://clinic:<your-password>@127.0.0.1:5432/clinic
-uv run --locked pytest tests/test_doctors_slots_schema.py -v
+uv run --locked pytest tests/test_doctors_slots_schema.py tests/test_conversations_schema.py -v
 ```
 
-Each test creates `test_schema_<uuid>`, applies the SQL file there and drops it, so `public` data stays intact. Result (2026-11-02): 15 passed in 2.4s; full suite 79 passed, coverage 95%. A fresh volume (`docker compose -p clinic-init-check up`) logged `running /docker-entrypoint-initdb.d/001_doctors_slots.sql` and created both tables.
+The shared `schema_db` fixture in `tests/conftest.py` creates `test_schema_<uuid>`, applies every `db/init/*.sql` file there in name order (as on a fresh volume) and drops it, so `public` data stays intact.
+
+| Date | Result |
+|---|---|
+| 2026-11-02 (#19) | doctors/slots 15 passed in 2.4s; full suite 79 passed, coverage 95% |
+| 2026-11-03 (#26) | conversations 6 passed, doctors/slots 15 passed; full suite 98 passed, coverage 96% |
+
+A fresh volume (`POSTGRES_PORT=55432 docker compose -p clinic-init-check up -d --wait db`) logged `running .../001_doctors_slots.sql` then `running .../002_conversations.sql` and created `conversations`, `doctors`, `slots`; the throwaway project was then removed with `docker compose -p clinic-init-check down -v`.
 
 ## Setup
 

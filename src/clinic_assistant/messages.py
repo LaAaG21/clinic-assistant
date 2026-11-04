@@ -9,6 +9,9 @@ from uuid import UUID
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
 
 MAX_MESSAGE_LENGTH = 4000
+Intent = Literal[
+    "clinic_question", "find_slots", "book", "cancel", "other", "emergency"
+]
 MessageText = Annotated[
     str,
     StringConstraints(
@@ -104,9 +107,7 @@ class PatientMessageResponse(BoundaryModel):
     conversation_id: OpaqueID
     patient_message_id: OpaqueID
     reply: AssistantMessage
-    intent: Literal[
-        "clinic_question", "find_slots", "book", "cancel", "other", "emergency"
-    ]
+    intent: Intent
     response_type: Literal[
         "answer",
         "clarification",

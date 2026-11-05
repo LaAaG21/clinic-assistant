@@ -193,6 +193,7 @@ def test_approved_cancellation_changes_booking_once(db: Connect) -> None:
         )
         assert result == "cancelled"
 
+    # Read through a new connection to verify that the cancellation was committed.
     query = "SELECT status, cancelled_at FROM bookings WHERE booking_id = 'booking_1'"
     with db() as conn:
         first = conn.execute(query).fetchone()
@@ -202,6 +203,7 @@ def test_approved_cancellation_changes_booking_once(db: Connect) -> None:
         retry = cancel_approved_booking(
             conn, booking_id="booking_1", conversation_id="conv_1"
         )
+        # A second call must leave the original cancellation timestamp intact.
         # Request-level replay belongs to the completion contract.
         assert retry == "ineligible_target"
         assert conn.execute(query).fetchone() == first
@@ -219,6 +221,7 @@ def test_cancellation_rejects_missing_or_wrong_conversation(
         result = cancel_approved_booking(
             conn, booking_id=booking_id, conversation_id=conversation_id
         )
+        # Missing targets and bookings in another conversation get the same result.
         assert result == "target_not_found"
         assert conn.execute("SELECT status, cancelled_at FROM bookings").fetchall() == [
             ("booked", None)
@@ -236,6 +239,7 @@ def test_cancellation_rolls_back_if_completion_fails(db: Connect) -> None:
             )
             == "cancelled"
         )
+        # Simulate a failure before the transaction can commit the cancellation.
         raise RuntimeError("completion failed")
 
     with db() as conn:

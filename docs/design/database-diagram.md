@@ -152,3 +152,5 @@ Because they have different owners and purposes. Our tables hold business facts 
 The Mermaid source parsed and rendered without errors with Mermaid 11.4.1 (2026-11-02).
 
 2026-11-02: merged in #33; #22 closed at the Product Owner's (@LaAaG21) request, and the `blocked` label was removed from #19. #19 implements the doctors and slots part as proposed above: text IDs, `timestamptz`, `starts_at < ends_at`, unique `(doctor_id, starts_at)`, required doctor FK, specialty as text (Q7). Pending written confirmation: Q8 (overlapping slots are **not** blocked in v1) and the schema path `db/init/` (applied once on a fresh volume). Q1–Q6, Q9 and Q10 remain open.
+
+2026-11-05: #55 implements `emergency_flags` as proposed above (`flag_id`, `conversation_id` FK, unique `message_id`, `created_at`) in `db/init/010_emergency_flags.sql`. The `message_id` foreign key to `messages` is deferred until #26's second portion creates that table; Q5 (keeping `emergency_flags` in the design) is therefore applied in code but still awaits written team confirmation.

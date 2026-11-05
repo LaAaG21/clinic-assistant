@@ -48,7 +48,9 @@ and the emergency response with a safety instruction plus persistence error
 remain owned by those endpoints. Accepted actions that later fail retain the
 request-resource contract rather than becoming exception responses.
 
-Safe diagnostic logging remains the later L10b task. Run with debug disabled
+Safe diagnostic logging (#65) is described in
+[diagnostic-logging.md](diagnostic-logging.md); error responses also carry an
+`X-Request-ID` header for correlation. Run with debug disabled
 (the production app default); framework debug tracebacks bypass generic 500
 handling. These handlers cover failures before a response starts, not failures
 after streaming headers have already been sent.

@@ -43,6 +43,13 @@ Open [Swagger UI](http://127.0.0.1:8000/docs) or
 yet; `/health` checks PostgreSQL and `/` returns `404`. Stop the
 server with Ctrl+C. Use another port if 8000 is occupied.
 
+## Working guide and system view
+
+[AGENTS.md](AGENTS.md) holds the package, test, issue and review conventions; the
+[team working guide](docs/team/working-guide.md) records Ready/Done rules, sprint
+records and contribution evidence; the [system view](docs/design/system-view.md)
+shows the parts and links the API, database and workflow designs.
+
 ## Package conventions
 
 - Application code lives in `src/clinic_assistant/`; the ASGI entry point is

@@ -47,3 +47,25 @@ def schema_db() -> Iterator[Callable[[], AbstractContextManager[Conn]]]:
     finally:
         with connection(settings) as conn:
             conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(schema))
+
+
+@pytest.fixture
+def approval_db(
+    schema_db: Callable[[], AbstractContextManager[Conn]],
+) -> Callable[[], AbstractContextManager[Conn]]:
+    """Synthetic review targets shared by storage and endpoint tests."""
+    with schema_db() as conn:
+        conn.execute("INSERT INTO doctors VALUES ('d', 'Dr. Example', 'general')")
+        conn.execute(
+            "INSERT INTO slots VALUES"
+            " ('s1', 'd', '2026-11-05T10:00:00Z', '2026-11-05T10:30:00Z'),"
+            " ('s2', 'd', '2026-11-06T10:00:00Z', '2026-11-06T10:30:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO conversations (conversation_id) VALUES ('c1'), ('c2')"
+        )
+        conn.execute(
+            "INSERT INTO bookings (booking_id, slot_id, conversation_id)"
+            " VALUES ('b1', 's1', 'c1')"
+        )
+    return schema_db

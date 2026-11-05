@@ -12,6 +12,7 @@ from psycopg.rows import class_row
 from clinic_assistant.approvals import create_pending_approval
 from clinic_assistant.booking_state import Connect
 from clinic_assistant.cancellation import validate_cancellation_target
+from clinic_assistant.cancellation_completion import complete_cancellation
 from clinic_assistant.errors import RequestConflict
 from clinic_assistant.messages import (
     AssistantMessage,
@@ -156,9 +157,14 @@ def build_cancellation_graph(
             return {**state, "waiting_response": response.model_dump(mode="json")}
 
     def staff_review(state: CancellationState) -> dict[str, object]:
-        interrupt(state["waiting_response"])
-        # #77 supplies approved/rejected completion. This phase can only pause.
-        raise ValueError("Cancellation resume requires the completion workflow")
+        resumed: object = interrupt(state["waiting_response"])
+        if (
+            not isinstance(resumed, dict)
+            or resumed.get("request_id") != state["request_id"]
+        ):
+            raise ValueError("Cancellation completion workflow identity mismatch")
+        complete_cancellation(connect, request_id=state["request_id"])
+        return {}
 
     builder = StateGraph(CancellationState)
     builder.add_node("prepare", prepare)

@@ -1,0 +1,10 @@
+# Allow only build inputs; never send local secrets, environments, or Git data.
+**
+!Dockerfile
+!pyproject.toml
+!uv.lock
+!README.md
+!src/
+!src/**
+src/**/__pycache__/
+src/**/*.pyc

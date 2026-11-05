@@ -109,3 +109,9 @@ are documented in [Patient-message models](docs/development/patient-message-mode
 
 See [API and database health](docs/development/health.md) for the response contract,
 configuration, and real-PostgreSQL verification commands.
+
+## Seed data
+
+A fresh `docker compose up` database volume is loaded with a small synthetic set of
+doctors and appointment slots. See [seed data](docs/development/seed-data.md) for the
+dataset, the `SEED_BASE_DATE` setting, and safe reloading.

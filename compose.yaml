@@ -7,6 +7,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-clinic}
       POSTGRES_USER: ${POSTGRES_USER:-clinic}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (copy .env.example)}
+      # Session settings for psql inside this container, read by the seed file
+      # db/init/900_seed_doctors_slots.sql (#29). Empty SEED_BASE_DATE means today
+      # in the clinic timezone.
+      PGOPTIONS: >-
+        -c clinic.seed_timezone=${CLINIC_TIMEZONE:?Set CLINIC_TIMEZONE in .env (copy .env.example)}
+        -c clinic.seed_base_date=${SEED_BASE_DATE:-}
     ports:
       # Local machine only; never exposed to the network.
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"

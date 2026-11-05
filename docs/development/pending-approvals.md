@@ -41,3 +41,24 @@ database.
 ```powershell
 uv run --locked pytest tests/test_approvals.py -v
 ```
+
+## Pending-approval API (#45)
+
+`GET /staff/approvals` calls the storage helper and returns `items` and
+`next_cursor`. Each item includes `approval_id`, `request_id`,
+`conversation_id`, `action`, `target`, and `created_at`. Booking targets contain
+`slot_id`. Cancellation targets expose `appointment_id`, the stored booking ID.
+
+Use `?limit=50` and pass the returned opaque `cursor` to traverse older-to-newer
+pages. The final or empty page has a null cursor. Responses use
+`Cache-Control: no-store` to keep staff reads current. Invalid limits/cursors
+return the shared `422 validation_error` envelope. Recognized database
+unavailability returns `503`, and query timeouts return `504`.
+
+The route uses the shared `DATABASE_URL` connection configuration. Apply the SQL
+initialization files before serving database reads. The proposal leaves
+deployment access restrictions for staff routes to team review.
+
+```powershell
+uv run --locked pytest tests/test_staff_approvals.py -v
+```

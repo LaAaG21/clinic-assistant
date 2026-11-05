@@ -6,6 +6,65 @@ from psycopg import Connection
 
 CancellationOutcome = Literal["cancelled", "target_not_found", "ineligible_target"]
 CancellationTargetOutcome = Literal["eligible", "target_not_found", "ineligible_target"]
+ApprovedCancellationOutcome = Literal[
+    "cancelled", "already_completed", "target_not_found", "ineligible_target"
+]
+
+
+def cancel_approved_request(
+    conn: Connection[tuple[object, ...]],
+    *,
+    request_id: str,
+    booking_id: str,
+    conversation_id: str,
+) -> ApprovedCancellationOutcome:
+    """Cancel the saved approved target once in the caller's transaction.
+
+    The shared decision handoff must have committed an approval and processing
+    state. Lock order is request, approval, booking. Success records the request
+    outcome with the booking mutation. Completion callers save their assistant
+    outcome message before committing this same transaction.
+    """
+    if conn.autocommit:
+        raise ValueError("Cancellation requires a caller-owned transaction")
+    with conn.cursor() as cursor:
+        cursor.execute(
+            "SELECT status, outcome_code FROM requests WHERE request_id=%s"
+            " AND action='cancel' AND booking_id=%s AND conversation_id=%s FOR UPDATE",
+            (request_id, booking_id, conversation_id),
+        )
+        request = cursor.fetchone()
+        if request is None:
+            return "target_not_found"
+        cursor.execute(
+            "SELECT decision FROM approvals WHERE request_id=%s FOR UPDATE",
+            (request_id,),
+        )
+        if cursor.fetchone() != ("approve",):
+            return "ineligible_target"
+        if request == ("completed", "appointment_cancelled"):
+            cursor.execute(
+                "SELECT 1 FROM bookings WHERE booking_id=%s AND conversation_id=%s"
+                " AND status='cancelled' FOR UPDATE",
+                (booking_id, conversation_id),
+            )
+            return "already_completed" if cursor.fetchone() else "ineligible_target"
+        if request != ("processing", None):
+            return "ineligible_target"
+        outcome = cancel_approved_booking(
+            conn,
+            booking_id=booking_id,
+            conversation_id=conversation_id,
+        )
+        if outcome != "cancelled":
+            return outcome
+        cursor.execute(
+            "UPDATE requests SET status='completed',"
+            " outcome_code='appointment_cancelled',"
+            " updated_at=statement_timestamp() WHERE request_id=%s",
+            (request_id,),
+        )
+        return "cancelled"
 
 
 def validate_cancellation_target(

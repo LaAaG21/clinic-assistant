@@ -1,20 +1,36 @@
 # Approved booking cancellation (#67)
 
-`cancel_approved_booking` is called by staff-approved completion after verifying
-the saved approval. It accepts the intended booking and conversation IDs.
-The caller owns a non-autocommit transaction and commits the request outcome
-together with the cancellation. Failures must escape the shared connection context
-to roll back. The helper locks and rechecks the booking before its conditional update.
+`cancel_approved_request(conn, request_id=..., booking_id=...,
+conversation_id=...)` is the database entry point for staff-approved completion.
+It checks the saved cancellation target, durable approval, and request state.
+The shared #62 decision handoff supplies the approved `processing` request.
 
-`validate_cancellation_target` shares those ownership/state checks with the
-[cancellation pause](cancellation-workflow.md). It returns `eligible`,
-`target_not_found`, or `ineligible_target` without changing the booking.
+The safe outcomes distinguish the result.
+
+- `cancelled` when the active booking changes to cancelled.
+- `already_completed` when the same approved request already recorded a
+  completed `appointment_cancelled` outcome and its booking remains cancelled.
+- `target_not_found` when the request/booking/conversation identity mismatches.
+- `ineligible_target` for pending/rejected approval, an incompatible request
+  state, or a booking cancelled outside this request.
+
+The operation locks request, approval and booking in that order. A conditional
+booking update sets `cancelled_at`, and the request's completed cancellation
+outcome is recorded in the same caller-owned transaction. It preserves the
+original timestamp on replay and targets the original booking after rebooking.
+
+Use a non-autocommit connection from the shared connection context. The production
+completion caller saves its assistant outcome message before committing this
+same transaction. A failure must escape the context to roll back the booking,
+request marker and any message together. #77 owns that graph/message integration.
+
+`cancel_approved_booking` supplies the conditional booking mutation, and
+`validate_cancellation_target` supplies the shared non-mutating ownership/state
+check used by the [cancellation pause](cancellation-workflow.md).
 Its optional row lock is retained by the caller's transaction.
 
-The outcomes are `cancelled`, `target_not_found` for a missing/mismatched target,
-and `ineligible_target` for a booking outside the active state. Same-request
-replay versus conflicting cancellation belongs to #77's shared completion logic
-using #52's saved request. This operation alone leaves that #67 criterion partial.
+Set `TEST_DATABASE_URL` to a disposable PostgreSQL database and run the focused tests.
 
-With `TEST_DATABASE_URL` set to a disposable PostgreSQL database, run
-`uv run --locked pytest tests/test_bookings_schema.py -k cancellation -v`.
+```powershell
+uv run --locked pytest tests/test_approved_cancellation.py tests/test_bookings_schema.py -q
+```

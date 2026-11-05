@@ -246,3 +246,20 @@ def test_cancellation_rolls_back_if_completion_fails(db: Connect) -> None:
         assert conn.execute("SELECT status, cancelled_at FROM bookings").fetchall() == [
             ("booked", None)
         ]
+
+
+def test_cancellation_rejects_autocommit(db: Connect) -> None:
+    with db() as conn:
+        book(conn, "booking_1")
+    with db() as conn:
+        conn.commit()
+        conn.autocommit = True
+        with pytest.raises(ValueError, match="caller-owned transaction"):
+            cancel_approved_booking(
+                conn,
+                booking_id="booking_1",
+                conversation_id="conv_1",
+            )
+        assert conn.execute("SELECT status, cancelled_at FROM bookings").fetchall() == [
+            ("booked", None)
+        ]

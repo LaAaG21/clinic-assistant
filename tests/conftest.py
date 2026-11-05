@@ -1,8 +1,10 @@
 """Shared fixture for schema tests on real PostgreSQL (set TEST_DATABASE_URL).
 
-`schema_db` applies every db/init/*.sql file in name order, as the postgres image
-does on a fresh volume, inside a uniquely named schema that is dropped afterwards,
-so developer data in the public schema is never touched.
+`schema_db` applies every db/init/*.sql schema file in name order, as the postgres
+image does on a fresh volume, inside a uniquely named schema that is dropped
+afterwards, so developer data in the public schema is never touched. Seed files
+(`*_seed_*.sql`) are skipped so schema tests start from empty tables; seed tests
+load them explicitly.
 """
 
 import os
@@ -34,7 +36,8 @@ def schema_db() -> Iterator[Callable[[], AbstractContextManager[Conn]]]:
         conn.execute(sql.SQL("CREATE SCHEMA {}").format(schema))
         conn.execute(sql.SQL("SET search_path TO {}").format(schema))
         for sql_file in sorted(INIT_DIR.glob("*.sql")):
-            conn.execute(sql_file.read_bytes())
+            if "_seed_" not in sql_file.name:
+                conn.execute(sql_file.read_bytes())
 
     @contextmanager
     def connect() -> Iterator[Conn]:

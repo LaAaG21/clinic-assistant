@@ -12,6 +12,9 @@ Plain SQL files in [`db/init/`](../../db/init/) are mounted read-only into `/doc
 | `001_doctors_slots.sql` | #19 | `doctors`, `slots` |
 | `002_conversations.sql` | #26 (first portion) | `conversations` |
 | `003_bookings.sql` | #39 | `bookings` + partial unique index `bookings_one_active_per_slot` |
+| `900_seed_doctors_slots.sql` | #29 | synthetic `doctors`/`slots` rows; see [seed data](seed-data.md) |
+
+Seed files are numbered `9xx` so they run after every schema file.
 
 Agreed order (#52): doctors/slots → conversations → bookings (#39) → requests (#52) → messages (#26, second portion) → approvals (#40). Each file may only reference tables created by earlier files.
 
@@ -32,7 +35,7 @@ export TEST_DATABASE_URL=postgresql://clinic:<your-password>@127.0.0.1:5432/clin
 uv run --locked pytest tests/test_doctors_slots_schema.py tests/test_conversations_schema.py tests/test_bookings_schema.py -v
 ```
 
-The shared `schema_db` fixture in `tests/conftest.py` creates `test_schema_<uuid>`, applies every `db/init/*.sql` file there in name order (as on a fresh volume) and drops it, so `public` data stays intact.
+The shared `schema_db` fixture in `tests/conftest.py` creates `test_schema_<uuid>`, applies every `db/init/*.sql` schema file there in name order (as on a fresh volume, skipping `*_seed_*.sql` files) and drops it, so `public` data stays intact.
 
 | Date | Result |
 |---|---|
@@ -65,6 +68,8 @@ Without `POSTGRES_PASSWORD`, Compose stops with: `Set POSTGRES_PASSWORD in .env 
 | `POSTGRES_USER` | `clinic` | postgres image, health check |
 | `POSTGRES_PASSWORD` | placeholder `change-me`, required | postgres image |
 | `POSTGRES_PORT` | `5432` | host port (127.0.0.1 only) |
+| `CLINIC_TIMEZONE` | `Asia/Dubai` (example) | required by Compose; seed slot times ([seed data](seed-data.md)) and app settings |
+| `SEED_BASE_DATE` | empty (today in clinic timezone) | first day of seed slots ([seed data](seed-data.md)) |
 | `DATABASE_URL` | `postgresql://clinic:change-me@127.0.0.1:5432/clinic` | application code and tests on your machine (#12) |
 
 Use `127.0.0.1`, not `localhost`: the port is bound to IPv4 only, and `localhost` may try IPv6 first and wait for the connect timeout. Code running inside Compose later should reach the database at host `db`.

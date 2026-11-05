@@ -26,7 +26,8 @@ request marker and any message together. #77 owns that graph/message integration
 
 `cancel_approved_booking` supplies the conditional booking mutation, and
 `validate_cancellation_target` supplies the shared non-mutating ownership/state
-check. Its optional row lock is retained by the caller's transaction.
+check used by the [cancellation pause](cancellation-workflow.md).
+Its optional row lock is retained by the caller's transaction.
 
 Set `TEST_DATABASE_URL` to a disposable PostgreSQL database and run the focused tests.
 

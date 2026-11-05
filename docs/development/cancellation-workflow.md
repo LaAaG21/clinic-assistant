@@ -44,8 +44,12 @@ connect = lambda: connection(settings.database)
 with postgres_checkpointer(settings.database) as saver:
     graph = build_cancellation_graph(connect, saver)
     waiting = pause_cancellation(
-        graph, connect, conversation_id=conversation_id, request_id=request_id,
-        booking_id=booking_id, patient_message_id=accepted_patient_message_id,
+        graph,
+        connect,
+        conversation_id=conversation_id,
+        request_id=request_id,
+        booking_id=booking_id,
+        patient_message_id=accepted_patient_message_id,
     )
 ```
 

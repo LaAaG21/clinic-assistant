@@ -1,31 +1,14 @@
-"""Fake-driven clarification cases; real classifier integration follows #63."""
+"""Clarification decisions driven by the real classifier and fake model."""
 
 import asyncio
 import json
-from dataclasses import dataclass
-from datetime import date as Date
-from typing import Any, NoReturn
+from typing import NoReturn
 
 import pytest
 
 from clinic_assistant.clarification import clarify
+from clinic_assistant.classification import classify_intent
 from clinic_assistant.model_adapter import FakeModelAdapter, ModelMessage
-
-
-@dataclass(frozen=True)
-class DetailsFixture:
-    doctor_id: str | None = None
-    specialty: str | None = None
-    date: Date | None = None
-    slot_id: str | None = None
-    appointment_id: str | None = None
-
-
-@dataclass(frozen=True)
-class IntentFixture:
-    intent: str
-    uncertain: bool
-    details: DetailsFixture
 
 
 @pytest.mark.parametrize(
@@ -79,7 +62,7 @@ class IntentFixture:
 def test_fake_driven_questions_and_unchanged_complete_state(
     intent: str,
     uncertain: bool,
-    details: dict[str, Any],
+    details: dict[str, str],
     question: str | None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -91,21 +74,16 @@ def test_fake_driven_questions_and_unchanged_complete_state(
     monkeypatch.setattr("psycopg.connect", forbidden)
     configured = {"intent": intent, "uncertain": uncertain, "details": details}
     fake = FakeModelAdapter(json.dumps(configured))
-    messages = (ModelMessage("user", "Synthetic patient message"),)
-    payload = json.loads(asyncio.run(fake.generate(messages)))
-    fixture_details = dict(payload["details"])
-    if "date" in fixture_details:
-        fixture_details["date"] = Date.fromisoformat(fixture_details["date"])
-    state = IntentFixture(
-        payload["intent"], payload["uncertain"], DetailsFixture(**fixture_details)
-    )
+    text = "Synthetic patient message"
+    state = asyncio.run(classify_intent(text, fake))
     result = clarify(state)
     assert result.question == question
     assert result.needs_clarification == (question is not None)
     assert result.classification is state
     assert result.classification.intent == configured["intent"]
-    assert fake.calls == [messages]  # No additional model work to ask a question.
     assert clarify(state) == result
+    assert len(fake.calls) == 1  # Only the classifier calls the model.
+    assert fake.calls[0][-1] == ModelMessage("user", text)
     if question is not None:
         assert (
             "provided-" not in question

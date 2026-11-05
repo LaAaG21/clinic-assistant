@@ -53,7 +53,9 @@ class Slot(BoundaryModel):
     ends_at: AwareDatetime
 
 
-class SavedDecision(BoundaryModel):
+class StaffDecisionRequest(BoundaryModel):
+    """Validated staff input for later decision handling."""
+
     decision: Literal["approve", "reject"]
     reason: Annotated[
         str,
@@ -61,6 +63,9 @@ class SavedDecision(BoundaryModel):
             strict=True, strip_whitespace=True, min_length=1, max_length=1000
         ),
     ]
+
+
+class SavedDecision(StaffDecisionRequest):
     decided_at: AwareDatetime
 
 

@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from clinic_assistant.conversations import router as conversations_router
 from clinic_assistant.errors import register_error_handlers
 from clinic_assistant.health import router as health_router
 
@@ -12,4 +13,5 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(conversations_router)
 register_error_handlers(app)

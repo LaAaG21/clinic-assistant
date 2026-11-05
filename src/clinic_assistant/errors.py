@@ -1,11 +1,14 @@
 """Safe HTTP boundary errors; adapters explicitly identify dependency failures."""
 
+import logging
 from typing import Literal
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
+
+from clinic_assistant.diagnostics import log_failure, request_id
 
 DependencyCode = Literal[
     "dependency_unavailable", "persistence_unavailable", "dependency_timeout"
@@ -70,6 +73,7 @@ class RequestConflict(Exception):
 
 
 def _response(
+    request: Request,
     status: int,
     code: str,
     message: str,
@@ -77,10 +81,11 @@ def _response(
     fields: dict[str, str] | None = None,
     headers: dict[str, str] | None = None,
 ) -> JSONResponse:
+    # The correlation ID lets a patient report be matched with the diagnostic log.
     return JSONResponse(
         status_code=status,
         content={"error": {"code": code, "message": message, "fields": fields or {}}},
-        headers=headers,
+        headers={**(headers or {}), "X-Request-ID": request_id(request)},
     )
 
 
@@ -88,7 +93,9 @@ async def _validation_error(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestValidationError)
     errors = exc.errors()
     if any(error["type"] == "json_invalid" for error in errors):
-        return _response(400, "invalid_json", "The request body must be valid JSON.")
+        return _response(
+            request, 400, "invalid_json", "The request body must be valid JSON."
+        )
 
     fields: dict[str, str] = {}
     for error in errors:
@@ -106,7 +113,11 @@ async def _validation_error(request: Request, exc: Exception) -> JSONResponse:
             field, _VALIDATION_REASONS.get(error["type"], "invalid_value")
         )
     return _response(
-        422, "validation_error", "The request contains invalid fields.", fields=fields
+        request,
+        422,
+        "validation_error",
+        "The request contains invalid fields.",
+        fields=fields,
     )
 
 
@@ -118,6 +129,8 @@ async def _http_error(request: Request, exc: Exception) -> JSONResponse:
         else ("http_error", "The request could not be accepted.")
     )
     code, message = _HTTP_ERRORS.get(exc.status_code, fallback)
+    if exc.status_code >= 500:
+        log_failure(request, f"http_{exc.status_code}", code, level=logging.ERROR)
     # These protocol headers remain useful to clients. Callers must supply safe
     # public values; internal diagnostic headers and exception detail are dropped.
     headers = {
@@ -125,22 +138,29 @@ async def _http_error(request: Request, exc: Exception) -> JSONResponse:
         for name, value in (exc.headers or {}).items()
         if name.lower() in {"allow", "www-authenticate", "retry-after"}
     }
-    return _response(exc.status_code, code, message, headers=headers)
+    return _response(request, exc.status_code, code, message, headers=headers)
 
 
 async def _dependency_error(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, DependencyFailure)
     status, message = _DEPENDENCY_ERRORS[exc.code]
-    return _response(status, exc.code, message)
+    # Unconfirmed durable acceptance needs operator attention; outages and
+    # timeouts are expected dependency conditions.
+    level = logging.ERROR if exc.code == "persistence_unavailable" else logging.WARNING
+    log_failure(request, "dependency_failure", exc.code, exc.__cause__, level=level)
+    return _response(request, status, exc.code, message)
 
 
 async def _unexpected_error(request: Request, exc: Exception) -> JSONResponse:
-    return _response(500, "internal_error", "An unexpected error occurred.")
+    log_failure(
+        request, "unexpected_failure", "internal_error", exc, level=logging.ERROR
+    )
+    return _response(request, 500, "internal_error", "An unexpected error occurred.")
 
 
 async def _conflict_error(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestConflict)
-    return _response(409, exc.code, _CONFLICT_ERRORS[exc.code])
+    return _response(request, 409, exc.code, _CONFLICT_ERRORS[exc.code])
 
 
 def register_error_handlers(app: FastAPI) -> None:

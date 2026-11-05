@@ -13,6 +13,7 @@ Plain SQL files in [`db/init/`](../../db/init/) are mounted read-only into `/doc
 | `002_conversations.sql` | #26 (first portion) | `conversations` |
 | `003_bookings.sql` | #39 | `bookings` + partial unique index `bookings_one_active_per_slot` |
 | `004_requests.sql` | #52 | `requests` with conversation, slot and booking foreign keys |
+| `005_messages.sql` | #26 (remaining portion) | `messages` with conversation/request FKs and client retry identity |
 | `006_approvals.sql` | #40 | `approvals` with a unique request FK and pending-order index |
 
 Agreed order (#52): doctors/slots → conversations → bookings (#39) → requests (#52) → messages (#26, second portion) → approvals (#40). Each file may only reference tables created by earlier files.

@@ -69,3 +69,21 @@ def approval_db(
             " VALUES ('b1', 's1', 'c1')"
         )
     return schema_db
+
+
+@pytest.fixture
+def checkpoint_db() -> Iterator[tuple[DatabaseSettings, str]]:
+    url = os.getenv("TEST_DATABASE_URL")
+    if not url:
+        pytest.skip("Set TEST_DATABASE_URL to run real PostgreSQL tests")
+    settings = DatabaseSettings(url=url)
+    schema = "test_checkpoints_" + uuid4().hex
+    try:
+        yield settings, schema
+    finally:
+        with connection(settings) as conn:
+            conn.execute(
+                sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(
+                    sql.Identifier(schema)
+                )
+            )

@@ -21,7 +21,8 @@ Database access uses plain SQL without an ORM.
 ## Status
 
 In development. The application foundation serves OpenAPI and interactive API
-documentation and the database health endpoint. Clinic workflows and API
+documentation, the database health endpoint, and pending staff-approval reads.
+Clinic workflows and API
 Docker packaging are separate tasks.
 
 ## Local development
@@ -39,8 +40,9 @@ locked dependencies into `.venv`. It can download Python if it is not installed.
 This foundation starts without a database, `.env`, or model API key.
 
 Open [Swagger UI](http://127.0.0.1:8000/docs) or
-[OpenAPI JSON](http://127.0.0.1:8000/openapi.json). No business routes are registered
-yet; `/health` checks PostgreSQL and `/` returns `404`. Stop the
+[OpenAPI JSON](http://127.0.0.1:8000/openapi.json). `/health` checks PostgreSQL and
+`/staff/approvals` lists pending staff reviews from the initialized database.
+`/` returns `404`. Stop the
 server with Ctrl+C. Use another port if 8000 is occupied.
 
 ## Package conventions
@@ -109,3 +111,8 @@ are documented in [Patient-message models](docs/development/patient-message-mode
 
 See [API and database health](docs/development/health.md) for the response contract,
 configuration, and real-PostgreSQL verification commands.
+
+## Pending staff approvals
+
+See [pending approval storage and API](docs/development/pending-approvals.md) for
+`GET /staff/approvals`, its pagination contract, and real-PostgreSQL tests.

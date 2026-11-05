@@ -12,6 +12,8 @@ import psycopg
 import pytest
 from psycopg import errors
 
+from clinic_assistant.cancellation import cancel_approved_booking
+
 Conn = psycopg.Connection[tuple[object, ...]]
 Connect = Callable[[], AbstractContextManager[Conn]]
 
@@ -181,3 +183,83 @@ def test_cancelled_at_matches_status(
             (status, cancelled_at),
         )
     assert constraint_of(error) == "bookings_cancelled_at_matches_status"
+
+
+def test_approved_cancellation_changes_booking_once(db: Connect) -> None:
+    with db() as conn:
+        book(conn, "booking_1")
+        result = cancel_approved_booking(
+            conn, booking_id="booking_1", conversation_id="conv_1"
+        )
+        assert result == "cancelled"
+
+    # Read through a new connection to verify that the cancellation was committed.
+    query = "SELECT status, cancelled_at FROM bookings WHERE booking_id = 'booking_1'"
+    with db() as conn:
+        first = conn.execute(query).fetchone()
+        assert first is not None
+        assert first[0] == "cancelled"
+        assert first[1] is not None
+        retry = cancel_approved_booking(
+            conn, booking_id="booking_1", conversation_id="conv_1"
+        )
+        # A second call must leave the original cancellation timestamp intact.
+        # Request-level replay belongs to the completion contract.
+        assert retry == "ineligible_target"
+        assert conn.execute(query).fetchone() == first
+
+
+@pytest.mark.parametrize(
+    ("booking_id", "conversation_id"),
+    [("missing", "conv_1"), ("booking_1", "conv_2")],
+)
+def test_cancellation_rejects_missing_or_wrong_conversation(
+    db: Connect, booking_id: str, conversation_id: str
+) -> None:
+    with db() as conn:
+        book(conn, "booking_1")
+        result = cancel_approved_booking(
+            conn, booking_id=booking_id, conversation_id=conversation_id
+        )
+        # Missing targets and bookings in another conversation get the same result.
+        assert result == "target_not_found"
+        assert conn.execute("SELECT status, cancelled_at FROM bookings").fetchall() == [
+            ("booked", None)
+        ]
+
+
+def test_cancellation_rolls_back_if_completion_fails(db: Connect) -> None:
+    with db() as conn:
+        book(conn, "booking_1")
+
+    with pytest.raises(RuntimeError, match="completion failed"), db() as conn:
+        assert (
+            cancel_approved_booking(
+                conn, booking_id="booking_1", conversation_id="conv_1"
+            )
+            == "cancelled"
+        )
+        # Simulate a failure before the transaction can commit the cancellation.
+        raise RuntimeError("completion failed")
+
+    with db() as conn:
+        assert conn.execute("SELECT status, cancelled_at FROM bookings").fetchall() == [
+            ("booked", None)
+        ]
+
+
+def test_cancellation_rejects_autocommit(db: Connect) -> None:
+    with db() as conn:
+        book(conn, "booking_1")
+    with db() as conn:
+        conn.commit()
+        conn.autocommit = True
+        with pytest.raises(ValueError, match="caller-owned transaction"):
+            cancel_approved_booking(
+                conn,
+                booking_id="booking_1",
+                conversation_id="conv_1",
+            )
+        assert conn.execute("SELECT status, cancelled_at FROM bookings").fetchall() == [
+            ("booked", None)
+        ]

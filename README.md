@@ -21,8 +21,25 @@ Database access uses plain SQL without an ORM.
 ## Status
 
 In development. The application foundation serves OpenAPI and interactive API
-documentation and the database health endpoint. Clinic workflows and API
-Docker packaging are separate tasks.
+documentation and the database health endpoint, and Docker Compose builds and
+runs it with PostgreSQL. Clinic workflows are separate tasks.
+
+## Run with Docker Compose
+
+Copy `.env.example` to `.env`, set a local PostgreSQL password and the clinic's
+IANA timezone, then run from the repository root:
+
+```sh
+docker compose up --build -d --wait
+```
+
+Open [Swagger UI](http://127.0.0.1:8000/docs),
+[OpenAPI JSON](http://127.0.0.1:8000/openapi.json) or
+[health](http://127.0.0.1:8000/health). Both services bind to localhost only and
+fake model mode needs no API key. The database schema in `db/init/` is applied
+automatically on a fresh volume; seed data and clinic documents are still
+separate tasks (#29, #42). See [Docker packaging](docs/development/docker.md)
+for configuration, the container health check and the verification record.
 
 ## Local development
 

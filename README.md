@@ -109,3 +109,9 @@ are documented in [Patient-message models](docs/development/patient-message-mode
 
 See [API and database health](docs/development/health.md) for the response contract,
 configuration, and real-PostgreSQL verification commands.
+
+## Smoke checks
+
+Run `uv run --locked python -m clinic_assistant.smoke --base-url http://127.0.0.1:8000`
+against a running service. See [smoke checks](docs/development/smoke.md) for what it
+checks, its exit codes, and the synthetic records it creates.

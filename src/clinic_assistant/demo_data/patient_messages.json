@@ -1,0 +1,60 @@
+{
+  "synthetic": true,
+  "description": "Synthetic development/demo patient messages for the fictional Cedar Grove Clinic (#42). Examples only: no real patient information, and nothing here is executed. Expected values follow the proposed #6 contract (docs/design/service-boundaries-and-api.md).",
+  "messages": [
+    {
+      "id": "demo_msg_supported_question",
+      "scenario": "supported_clinic_question",
+      "text": "When does the clinic open?",
+      "expected_intent": "clinic_question",
+      "expected_response_type": "answer",
+      "expected_sources": ["clinic-hours.md"],
+      "note": "Answered only from the opening-hours document, citing it as the source."
+    },
+    {
+      "id": "demo_msg_unsupported_question",
+      "scenario": "unsupported_clinic_question",
+      "text": "Does the clinic accept Maple insurance?",
+      "expected_intent": "clinic_question",
+      "expected_response_type": "unsupported",
+      "expected_sources": [],
+      "note": "The documents name only Cedar insurance, so the reply is the explicit fallback with no citations."
+    },
+    {
+      "id": "demo_msg_availability",
+      "scenario": "availability",
+      "text": "Which dermatology appointments are free on 2026-11-10?",
+      "expected_intent": "find_slots",
+      "expected_response_type": "slots",
+      "expected_sources": [],
+      "note": "Matches the #29 seed slots when the database is seeded with SEED_BASE_DATE=2026-11-10; listing slots does not reserve them."
+    },
+    {
+      "id": "demo_msg_booking",
+      "scenario": "booking",
+      "text": "Please book slot_seed_derm_20261110T1000.",
+      "expected_intent": "book",
+      "expected_response_type": "action",
+      "expected_sources": [],
+      "note": "A #29 seed slot ID (SEED_BASE_DATE=2026-11-10). Completes directly before that date; on that clinic-local date it is a same-day booking and waits for staff approval."
+    },
+    {
+      "id": "demo_msg_cancellation",
+      "scenario": "cancellation",
+      "text": "Please cancel my appointment appt_demo.",
+      "expected_intent": "cancel",
+      "expected_response_type": "action",
+      "expected_sources": [],
+      "note": "Illustrative appointment ID from the #6 walkthrough. Every cancellation waits for staff approval (pending_approval); the appointment stays booked until then."
+    },
+    {
+      "id": "demo_msg_emergency",
+      "scenario": "emergency",
+      "text": "I have sudden chest pain and I can't breathe properly.",
+      "expected_intent": "emergency",
+      "expected_response_type": "emergency",
+      "expected_sources": [],
+      "note": "The emergency guard replies immediately and flags staff before ordinary classification, retrieval, or appointment processing."
+    }
+  ]
+}

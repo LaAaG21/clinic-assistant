@@ -61,6 +61,15 @@ from #6 guides future routes and keeps workflow policy outside API handlers.
 This foundation establishes package/tool conventions only; it does not finalize
 the research-dependent decisions that remain open in that proposal.
 
+## Design documents
+
+- [Service boundaries and API contract](docs/design/service-boundaries-and-api.md) (#6)
+- [Database diagram](docs/design/database-diagram.md) (#22)
+- [Message and staff-approval workflow](docs/design/message-workflow.md) (#38)
+
+All three are proposals under team review; they label open decisions instead of
+claiming agreement.
+
 ## Clinic documents
 
 The [clinic document loader](docs/development/clinic-document-loader.md) reads

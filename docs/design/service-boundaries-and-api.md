@@ -46,6 +46,10 @@ failures produce a clear response and diagnostic log, not an unhandled crash.
 
 ## Patient entry and workflow rules
 
+See the [message and staff-approval workflow](message-workflow.md) (#38) for the
+draft diagram, restart-recovery boundaries, scenario walkthrough and the open
+research decisions behind these rules.
+
 **Booking and cancellation enter through patient messages.** This proposal has
 no separate public booking/cancellation creation endpoints. A message such as
 "Book slot_demo_1" or "Cancel appt_demo_1" enters the same intent workflow as

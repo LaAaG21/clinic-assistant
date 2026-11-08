@@ -66,6 +66,9 @@ the research-dependent decisions that remain open in that proposal.
 The [clinic document loader](docs/development/clinic-document-loader.md) reads
 complete UTF-8 Markdown files and preserves original filenames for later citations.
 
+Synthetic demo clinic documents and example patient messages live in
+`src/clinic_assistant/demo_data/`; see [demo data](docs/development/demo-data.md).
+
 ## Quality checks
 
 After the locked sync, run:

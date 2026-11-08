@@ -12,6 +12,10 @@ from psycopg.conninfo import conninfo_to_dict
 from pydantic import SecretStr
 
 from clinic_assistant.database import DatabaseSettings
+from clinic_assistant.model_context import (
+    DEFAULT_CONTEXT_MESSAGES,
+    MAX_CONTEXT_MESSAGES,
+)
 
 
 class SettingsError(ValueError):
@@ -27,6 +31,7 @@ class AppSettings:
     openai_model: str | None = None
     openai_timeout_seconds: int = 10
     openai_max_retries: int = 0
+    model_context_messages: int = DEFAULT_CONTEXT_MESSAGES
 
 
 def _required(environment: Mapping[str, str], name: str) -> str:
@@ -93,13 +98,29 @@ def load_settings(environment: Mapping[str, str] | None = None) -> AppSettings:
     if backend not in ("fake", "openai"):
         raise SettingsError("MODEL_BACKEND must be fake or openai")
     mode: Literal["fake", "openai"] = "openai" if backend == "openai" else "fake"
+    context = _model_integer(
+        values,
+        "MODEL_CONTEXT_MESSAGES",
+        DEFAULT_CONTEXT_MESSAGES,
+        1,
+        MAX_CONTEXT_MESSAGES,
+    )
     if mode == "fake":
-        return AppSettings(database, timezone)
+        return AppSettings(database, timezone, model_context_messages=context)
     key = SecretStr(_required(values, "OPENAI_API_KEY"))
     model = _required(values, "OPENAI_MODEL")
     timeout = _model_integer(values, "OPENAI_TIMEOUT_SECONDS", 10, 1, 120)
     retries = _model_integer(values, "OPENAI_MAX_RETRIES", 0, 0, 2)
-    return AppSettings(database, timezone, mode, key, model, timeout, retries)
+    return AppSettings(
+        database,
+        timezone,
+        mode,
+        key,
+        model,
+        timeout,
+        retries,
+        model_context_messages=context,
+    )
 
 
 def _model_integer(

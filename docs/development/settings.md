@@ -18,6 +18,7 @@ do not echo input values, open database/model connections, or implicitly read
 | `OPENAI_MODEL` | Required only for `openai`; no model is silently selected. |
 | `OPENAI_TIMEOUT_SECONDS` | Integer 1..120, default 10; SDK timeout and whole-call deadline. |
 | `OPENAI_MAX_RETRIES` | Integer 0..2, default 0; bounded SDK retries inside the whole-call deadline. |
+| `MODEL_CONTEXT_MESSAGES` | Integer 1..50, default 10 (proposed, #81); the recent conversation window sent to the model in both backends. Stored history is never trimmed. |
 
 `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_PORT` keep their
 existing #11 Compose meanings. The application uses `DATABASE_URL`, as #12 does;

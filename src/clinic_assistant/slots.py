@@ -26,9 +26,16 @@ WHERE s.starts_at >= %(day_start)s
       SELECT 1 FROM bookings AS b
       WHERE b.slot_id = s.slot_id AND b.status = 'booked'
   )
+  AND (
+      %(after_start)s::timestamptz IS NULL
+      OR (s.starts_at, s.slot_id) > (%(after_start)s, %(after_slot_id)s::text)
+  )
 ORDER BY s.starts_at, s.slot_id
 LIMIT %(limit)s
 """
+
+# Keyset position for pagination: the (starts_at, slot_id) of the last slot seen.
+After = tuple[datetime, str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,12 +68,39 @@ def list_available_slots(
     doctor_id: str | None = None,
     specialty: str | None = None,
     limit: int = DEFAULT_LIMIT,
+    after: After | None = None,
 ) -> list[AvailableSlot]:
     """Free slots on a clinic-local day for a doctor, a specialty, or both.
 
     Both filters together mean their intersection. Results are ordered by start
     time, then slot ID, and capped at `limit` (1..100). The caller owns the
     connection, so its statement timeout bounds the query.
+    """
+    slots, _ = available_slot_page(
+        conn,
+        day,
+        clinic_timezone,
+        doctor_id=doctor_id,
+        specialty=specialty,
+        limit=limit,
+        after=after,
+    )
+    return slots
+
+
+def available_slot_page(
+    conn: psycopg.Connection[tuple[object, ...]],
+    day: date,
+    clinic_timezone: str,
+    *,
+    doctor_id: str | None = None,
+    specialty: str | None = None,
+    limit: int = DEFAULT_LIMIT,
+    after: After | None = None,
+) -> tuple[list[AvailableSlot], bool]:
+    """Like `list_available_slots`, plus whether more slots follow this page.
+
+    `after` continues strictly after a previous page's last (starts_at, slot_id).
     """
     if specialty is not None:
         specialty = specialty.strip()
@@ -78,14 +112,18 @@ def list_available_slots(
         raise ValueError(f"limit must be between 1 and {MAX_LIMIT}")
 
     day_start, day_end = clinic_day_bounds(day, clinic_timezone)
+    after_start, after_slot_id = after if after is not None else (None, None)
     params = {
         "day_start": day_start,
         "day_end": day_end,
         "doctor_id": doctor_id,
         "specialty": specialty,
-        "limit": limit,
+        "after_start": after_start,
+        "after_slot_id": after_slot_id,
+        "limit": limit + 1,  # one extra row tells us whether another page exists
     }
     # class_row builds AvailableSlot from the selected column names.
     with conn.cursor(row_factory=class_row(AvailableSlot)) as cursor:
         cursor.execute(_QUERY, params)
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+    return rows[:limit], len(rows) > limit

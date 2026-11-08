@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from clinic_assistant.errors import register_error_handlers
 from clinic_assistant.health import router as health_router
 from clinic_assistant.slots_api import router as slots_router
+from clinic_assistant.staff_flags import router as staff_flags_router
 
 app = FastAPI(
     title="Clinic Front-Desk Assistant",
@@ -14,4 +15,5 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(slots_router)
+app.include_router(staff_flags_router)
 register_error_handlers(app)

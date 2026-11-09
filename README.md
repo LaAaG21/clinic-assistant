@@ -118,3 +118,14 @@ configuration, and real-PostgreSQL verification commands.
 Run `uv run --locked python -m clinic_assistant.smoke --base-url http://127.0.0.1:8000`
 against a running service. See [smoke checks](docs/development/smoke.md) for what it
 checks, its exit codes, and the synthetic records it creates.
+
+## Deployment and rollback
+
+[Deployment and rollback](docs/development/deployment.md) explains how to deploy
+a tagged release or release candidate to an Ubuntu VirtualBox VM and how to roll
+it back. The guide covers cloning and selecting the tag, setting up `.env`,
+building and starting with `docker compose up --build -d --wait`, and running the
+health and smoke checks. For rollback, it covers PostgreSQL backups, schema
+compatibility checks that keep the data volume intact, and restoring `v0.1.0`.
+The guide needs the Compose `api` service from #25. Final tagged-release and VM
+evidence belongs to #84 and #89.

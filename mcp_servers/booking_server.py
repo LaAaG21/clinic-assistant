@@ -21,7 +21,11 @@ def book_appointment(patient_id: int, doctor: str, date: str, time: str) -> dict
     if patient_id not in patients:
         return {"error": f"Patient {patient_id} does not exist."}
     for appointment in appointments:
-        if appointment["doctor"] == doctor and appointment["date"] == date and appointment["time"] == time:
+        if (
+            appointment["doctor"] == doctor
+            and appointment["date"] == date
+            and appointment["time"] == time
+        ):
             return {"error": f"{doctor} is not available at {date} {time}."}
     appointment = {
         "appointment_id": len(appointments) + 1,

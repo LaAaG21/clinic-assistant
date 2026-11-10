@@ -7,7 +7,11 @@ medical_records: dict[int, list[dict]] = {
         {"date": "2026-10-02", "diagnosis": "Flu", "notes": "Rest"},
     ],
     2: [
-        {"date": "2026-09-15", "diagnosis": "Back pain", "notes": "Physiotherapy twice a week"},
+        {
+            "date": "2026-09-15",
+            "diagnosis": "Back pain",
+            "notes": "Physiotherapy twice a week",
+        },
         {"date": "2026-10-20", "diagnosis": "Follow-up", "notes": "Improving"},
     ],
 }

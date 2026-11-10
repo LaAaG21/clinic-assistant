@@ -41,7 +41,7 @@ select = ["E", "F", "I", "B", "UP"]
 python_version = "3.12"
 strict = true
 files = ["src", "tests"]
-exclude = ["^experiments/"]
+exclude = ["^experiments/", "^mcp_servers/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

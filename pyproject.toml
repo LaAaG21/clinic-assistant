@@ -41,7 +41,7 @@ select = ["E", "F", "I", "B", "UP"]
 python_version = "3.12"
 strict = true
 files = ["src", "tests"]
-exclude = ["^experiments/"]
+exclude = ["^(experiments|clinic_assistant_v2)/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

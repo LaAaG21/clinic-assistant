@@ -11,7 +11,15 @@ services:
       - qdrant-data:/qdrant/storage
     networks: [clinic-net]
 
-  # appointments-mcp (item 1) goes here
+  appointments-mcp:
+    build:
+      context: .
+      dockerfile: servers/appointments/Dockerfile
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+    ports:
+      - "127.0.0.1:8001:8001"
+    networks: [clinic-net]
 
   # pharmacy-mcp (item 2) goes here
 

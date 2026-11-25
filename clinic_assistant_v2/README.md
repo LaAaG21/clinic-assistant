@@ -31,7 +31,7 @@ docker compose up --build
 With Qdrant running (see [ingestion/README.md](ingestion/README.md) once item 4 is merged):
 
 ```sh
-uv run --group rag --group ingest python -m ingestion.ingest
+uv run --env-file .env python -m ingestion.ingest
 ```
 
 ## 5. Log in

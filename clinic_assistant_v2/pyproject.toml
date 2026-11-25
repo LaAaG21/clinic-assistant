@@ -25,3 +25,7 @@ src = ["."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.uv]
+# Tests need every group; Dockerfiles opt out with --no-default-groups.
+default-groups = "all"

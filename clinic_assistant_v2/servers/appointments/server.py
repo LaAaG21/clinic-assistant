@@ -12,7 +12,7 @@ HOST = "0.0.0.0"  # must not be 127.0.0.1 inside Docker
 READ_SCOPE = "appointments:read"
 WRITE_SCOPE = "appointments:write"
 
-# In-memory store: id -> appointment. `owner` is the caller's `sub`; it is never returned.
+# In-memory store: id -> appointment. `owner` is the caller's `sub`, never returned.
 APPOINTMENTS: dict[int, dict] = {
     1: {
         "owner": "user-a",

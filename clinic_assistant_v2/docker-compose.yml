@@ -15,7 +15,15 @@ services:
 
   # pharmacy-mcp (item 2) goes here
 
-  # medical-records-mcp (item 3) goes here
+  medical-records-mcp:
+    build:
+      context: .
+      dockerfile: servers/medical_records/Dockerfile
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+    ports:
+      - "127.0.0.1:8003:8003"
+    networks: [clinic-net]
 
   # knowledge-mcp (item 5) goes here
 

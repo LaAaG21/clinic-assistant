@@ -1,0 +1,28 @@
+# Secrets come from .env (copy .env.example). Each service receives only the
+# variables it needs, never the whole file.
+name: clinic-assistant-v2
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.20.2
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks: [clinic-net]
+
+  # appointments-mcp (item 1) goes here
+
+  # pharmacy-mcp (item 2) goes here
+
+  # medical-records-mcp (item 3) goes here
+
+  # knowledge-mcp (item 5) goes here
+
+  # api (item 6) goes here
+
+networks:
+  clinic-net:
+
+volumes:
+  qdrant-data:
